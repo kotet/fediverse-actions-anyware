@@ -1,0 +1,10 @@
+body {
+  width: 240px;
+  padding: 12px;
+  font-family: sans-serif;
+}
+
+h1 {
+  font-size: 14px;
+  margin: 0 0 8px;
+}
