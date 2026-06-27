@@ -25,6 +25,8 @@ export interface HomeAccountConfig {
   readonly label: string;
   /** Initial auth state for mock implementation. Only meaningful when `software === "mock"`. */
   readonly mockAuthState?: AuthState;
+  /** Mastodon instance hostname (e.g. "mastodon.social"). Only meaningful when `software === "mastodon"`. */
+  readonly mastodonInstance?: string;
 }
 
 /** Persisted state holding registered accounts and the active account selection. */

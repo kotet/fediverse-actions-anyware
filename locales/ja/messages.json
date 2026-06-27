@@ -44,8 +44,14 @@
   "accountRemoveTitle": {
     "message": "削除"
   },
-  "mastodonNotImplementedError": {
-    "message": "Mastodon アカウントの追加は未実装です。"
+  "mastodonInstanceRequired": {
+    "message": "インスタンスのURLを入力してください。"
+  },
+  "mastodonOAuthStarted": {
+    "message": "Mastodon の認証ページを開きました。新しいタブで認証を完了してください。"
+  },
+  "mastodonOAuthError": {
+    "message": "Mastodon の認証開始中にエラーが発生しました。"
   },
   "mockAccountLabel": {
     "message": "モックアカウント $COUNT$",

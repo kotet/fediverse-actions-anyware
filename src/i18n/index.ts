@@ -16,7 +16,9 @@ const MESSAGE_KEYS = [
   "authStateError",
   "accountActivateTitle",
   "accountRemoveTitle",
-  "mastodonNotImplementedError",
+  "mastodonInstanceRequired",
+  "mastodonOAuthStarted",
+  "mastodonOAuthError",
   "mockAccountLabel",
 ] as const;
 

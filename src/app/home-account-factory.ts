@@ -1,11 +1,13 @@
-import type { HomeAccount, HomeAccountConfig } from "../core";
+import type { HomeAccount } from "../core/home-account";
+import type { HomeAccountConfig } from "../core/account-config";
 import { MockHomeAccount } from "../mocks";
+import { MastodonHomeAccount } from "../mastodon";
 
 /**
  * Creates a {@link HomeAccount} instance from account configuration.
  *
- * Placed in the wiring layer that knows both core (abstract) and mocks
- * (implementation), preventing core from depending on mocks.
+ * Placed in the wiring layer that knows both core (abstract) and implementations,
+ * preventing core from depending on implementations.
  *
  * @param config Persisted account configuration.
  */
@@ -13,7 +15,11 @@ export function createHomeAccount(config: HomeAccountConfig): HomeAccount {
   switch (config.software) {
     case "mock":
       return new MockHomeAccount({ authState: config.mockAuthState });
-    case "mastodon":
-      throw new Error("Mastodon ホームアカウントは未実装です。");
+    case "mastodon": {
+      if (!config.mastodonInstance) {
+        throw new Error("mastodonInstance が設定されていません。");
+      }
+      return new MastodonHomeAccount(config.id, config.mastodonInstance);
+    }
   }
 }

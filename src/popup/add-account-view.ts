@@ -6,6 +6,7 @@ import {
   loadAccountStore,
 } from "../core";
 import { getMessage } from "../i18n";
+import { startMastodonOAuth } from "../mastodon";
 
 /** Callbacks to notify the caller of the result of operations on the add account view. */
 export interface AddAccountViewCallbacks {
@@ -19,8 +20,8 @@ export interface AddAccountViewCallbacks {
  * Initializes the add account form and wires up events.
  *
  * Toggles input fields based on the software selection and adds the account on submit.
- * Mock accounts complete within the popup; Mastodon accounts are expected to proceed
- * to an OAuth flow in a dedicated tab after instance selection (not yet implemented).
+ * Mock accounts complete within the popup; Mastodon accounts open an OAuth tab and
+ * complete asynchronously via the callback page.
  */
 export function setupAddAccountView(callbacks: AddAccountViewCallbacks): void {
   const form = document.getElementById("add-account-form") as HTMLFormElement;
@@ -30,11 +31,17 @@ export function setupAddAccountView(callbacks: AddAccountViewCallbacks): void {
   const instanceField = document.getElementById(
     "instance-field",
   ) as HTMLElement;
+  const instanceInput = document.getElementById(
+    "account-instance",
+  ) as HTMLInputElement;
   const errorMessage = document.getElementById(
     "add-account-error",
   ) as HTMLParagraphElement;
   const cancelButton = document.getElementById(
     "cancel-add-account",
+  ) as HTMLButtonElement;
+  const submitButton = document.getElementById(
+    "submit-add-account",
   ) as HTMLButtonElement;
 
   // Show the instance field only for non-mock software (those that have an instance).
@@ -57,10 +64,9 @@ export function setupAddAccountView(callbacks: AddAccountViewCallbacks): void {
     errorMessage.classList.add("hidden");
 
     const software = softwareSelect.value as HomeAccountSoftware;
+
     if (software === "mastodon") {
-      // Instance selection is done in the popup; OAuth is expected to be handled in a dedicated tab.
-      errorMessage.textContent = getMessage("mastodonNotImplementedError");
-      errorMessage.classList.remove("hidden");
+      void handleMastodonSubmit();
       return;
     }
 
@@ -72,6 +78,35 @@ export function setupAddAccountView(callbacks: AddAccountViewCallbacks): void {
         callbacks.onAccountAdded(nextState);
       });
   });
+
+  async function handleMastodonSubmit(): Promise<void> {
+    const instance = instanceInput.value.trim().replace(/^https?:\/\//, "");
+    if (!instance) {
+      errorMessage.textContent = getMessage("mastodonInstanceRequired");
+      errorMessage.classList.remove("hidden");
+      return;
+    }
+
+    submitButton.disabled = true;
+    errorMessage.classList.add("hidden");
+
+    try {
+      const accountId = crypto.randomUUID();
+      await startMastodonOAuth(instance, accountId);
+      // OAuth tab opened — popup will remain open but user switches to the OAuth tab.
+      // The callback page handles account creation; popup updates via storage change listener.
+      errorMessage.textContent = getMessage("mastodonOAuthStarted");
+      errorMessage.classList.remove("hidden");
+      errorMessage.style.color = "#2a6a2a";
+    } catch (err) {
+      errorMessage.textContent =
+        err instanceof Error ? err.message : getMessage("mastodonOAuthError");
+      errorMessage.classList.remove("hidden");
+      errorMessage.style.color = "";
+    } finally {
+      submitButton.disabled = false;
+    }
+  }
 
   syncInstanceField();
 }

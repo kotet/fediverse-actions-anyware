@@ -15,7 +15,9 @@
   "authStateError": { "message": "Error" },
   "accountActivateTitle": { "message": "Set as active" },
   "accountRemoveTitle": { "message": "Remove" },
-  "mastodonNotImplementedError": { "message": "Adding a Mastodon account is not yet implemented." },
+  "mastodonInstanceRequired": { "message": "Please enter the instance URL." },
+  "mastodonOAuthStarted": { "message": "Mastodon authorization page opened. Please complete authentication in the new tab." },
+  "mastodonOAuthError": { "message": "An error occurred while starting Mastodon authentication." },
   "mockAccountLabel": {
     "message": "Mock Account $COUNT$",
     "placeholders": {

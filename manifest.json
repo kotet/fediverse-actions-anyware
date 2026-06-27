@@ -7,7 +7,15 @@
 
   "permissions": [
     "activeTab",
-    "storage"
+    "storage",
+    "tabs"
+  ],
+
+  "web_accessible_resources": [
+    {
+      "resources": ["popup/oauth-callback.html"],
+      "matches": ["https://*/*"]
+    }
   ],
 
   "background": {

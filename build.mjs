@@ -15,6 +15,7 @@ await esbuild.build({
     "src/background/service_worker.ts",
     "src/content/content.ts",
     "src/popup/popup.ts",
+    "src/popup/oauth-callback.ts",
   ],
   bundle: true,
   outdir: "dist",
@@ -27,6 +28,7 @@ await Promise.all([
   cp("manifest.json", "dist/manifest.json"),
   cp("src/popup/popup.html", "dist/popup/popup.html"),
   cp("src/popup/popup.css", "dist/popup/popup.css"),
+  cp("src/popup/oauth-callback.html", "dist/popup/oauth-callback.html"),
   cp("icons", "dist/icons", { recursive: true }),
   ...locales.map((locale) =>
     cp(`locales/${locale}/messages.json`, `dist/_locales/${locale}/messages.json`),
