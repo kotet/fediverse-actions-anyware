@@ -74,7 +74,7 @@ export class MastodonHomeAccount implements HomeAccount {
     if (!credentials?.accessToken) {
       return {
         ok: false,
-        error: { kind: "unauthenticated", message: "認証されていません" },
+        error: { kind: "unauthenticated", message: "Not authenticated" },
       };
     }
 
@@ -87,7 +87,7 @@ export class MastodonHomeAccount implements HomeAccount {
       if (!status) {
         return {
           ok: false,
-          error: { kind: "not-found", message: "投稿が見つかりませんでした" },
+          error: { kind: "not-found", message: "Post not found" },
         };
       }
 
@@ -104,7 +104,7 @@ export class MastodonHomeAccount implements HomeAccount {
         case "reply":
           return {
             ok: false,
-            error: { kind: "failed", message: "返信は未実装です" },
+            error: { kind: "failed", message: "Reply is not implemented" },
           };
       }
       return { ok: true };
@@ -113,7 +113,7 @@ export class MastodonHomeAccount implements HomeAccount {
         ok: false,
         error: {
           kind: "failed",
-          message: error instanceof Error ? error.message : "不明なエラー",
+          message: error instanceof Error ? error.message : "Unknown error",
         },
       };
     }

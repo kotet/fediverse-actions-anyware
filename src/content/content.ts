@@ -23,7 +23,7 @@ async function renderActionButtons(): Promise<void> {
   const activeConfig = getActiveAccount(store);
   if (activeConfig === null) {
     console.log(
-      "[content] アクティブなホームアカウントがありません。ボタンを表示しません。",
+      "[content] No active home account. Not displaying buttons.",
     );
     return;
   }
@@ -32,7 +32,7 @@ async function renderActionButtons(): Promise<void> {
   const authState = await account.getAuthState();
   if (authState !== "authenticated") {
     console.log(
-      `[content] アクティブアカウントが未認証です (${authState})。ボタンを表示しません。`,
+      `[content] Active account is not authenticated (${authState}). Not displaying buttons.`,
     );
     return;
   }
@@ -44,7 +44,7 @@ async function renderActionButtons(): Promise<void> {
 
   const renderMode = new MockButtonRenderMode(RENDER_MODE);
   const posts = pageAdapter.extractPosts();
-  console.log(`[content] ${posts.length} 件の投稿を抽出しました。`);
+  console.log(`[content] Extracted ${posts.length} post(s).`);
   for (const post of posts) {
     renderMode.render(post, buildActionButtons(account, post));
   }

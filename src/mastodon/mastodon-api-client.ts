@@ -34,7 +34,7 @@ export async function registerMastodonApp(
     }),
   });
   if (!response.ok) {
-    throw new Error(`アプリ登録失敗: ${response.status} ${response.statusText}`);
+    throw new Error(`App registration failed: ${response.status} ${response.statusText}`);
   }
   const data = (await response.json()) as {
     client_id: string;
@@ -76,7 +76,7 @@ export async function exchangeAuthCode(
     }),
   });
   if (!response.ok) {
-    throw new Error(`トークン交換失敗: ${response.status} ${response.statusText}`);
+    throw new Error(`Token exchange failed: ${response.status} ${response.statusText}`);
   }
   const data = (await response.json()) as { access_token: string };
   return data.access_token;
@@ -91,7 +91,7 @@ export async function verifyCredentials(
     { headers: { Authorization: `Bearer ${accessToken}` } },
   );
   if (!response.ok) {
-    throw new Error(`認証情報確認失敗: ${response.status} ${response.statusText}`);
+    throw new Error(`Credential verification failed: ${response.status} ${response.statusText}`);
   }
   const data = (await response.json()) as {
     id: string;
@@ -121,7 +121,7 @@ export async function searchStatus(
     { headers: { Authorization: `Bearer ${accessToken}` } },
   );
   if (!response.ok) {
-    throw new Error(`ステータス検索失敗: ${response.status} ${response.statusText}`);
+    throw new Error(`Status search failed: ${response.status} ${response.statusText}`);
   }
   const data = (await response.json()) as {
     statuses: Array<{ id: string; url: string; account: { acct: string } }>;
@@ -142,7 +142,7 @@ export async function favouriteStatus(
     },
   );
   if (!response.ok) {
-    throw new Error(`お気に入り失敗: ${response.status} ${response.statusText}`);
+    throw new Error(`Favourite failed: ${response.status} ${response.statusText}`);
   }
 }
 
@@ -159,7 +159,7 @@ export async function boostStatus(
     },
   );
   if (!response.ok) {
-    throw new Error(`ブースト失敗: ${response.status} ${response.statusText}`);
+    throw new Error(`Boost failed: ${response.status} ${response.statusText}`);
   }
 }
 
@@ -176,6 +176,6 @@ export async function bookmarkStatus(
     },
   );
   if (!response.ok) {
-    throw new Error(`ブックマーク失敗: ${response.status} ${response.statusText}`);
+    throw new Error(`Bookmark failed: ${response.status} ${response.statusText}`);
   }
 }

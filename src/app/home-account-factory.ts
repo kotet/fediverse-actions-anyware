@@ -17,7 +17,7 @@ export function createHomeAccount(config: HomeAccountConfig): HomeAccount {
       return new MockHomeAccount({ authState: config.mockAuthState });
     case "mastodon": {
       if (!config.mastodonInstance) {
-        throw new Error("mastodonInstance が設定されていません。");
+        throw new Error("mastodonInstance is not configured.");
       }
       return new MastodonHomeAccount(config.id, config.mastodonInstance);
     }

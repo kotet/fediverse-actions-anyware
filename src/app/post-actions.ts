@@ -10,10 +10,10 @@ const API_ACTION_LABELS: ReadonlyArray<{
   kind: ApiActionKind;
   label: string;
 }> = [
-  { kind: "favourite", label: "お気に入り" },
-  { kind: "boost", label: "ブースト" },
-  { kind: "bookmark", label: "ブックマーク" },
-  { kind: "reply", label: "返信" },
+  { kind: "favourite", label: "Favourite" },
+  { kind: "boost", label: "Boost" },
+  { kind: "bookmark", label: "Bookmark" },
+  { kind: "reply", label: "Reply" },
 ];
 
 /**
@@ -37,7 +37,7 @@ export function buildActionButtons(
         const result = await account.performAction(kind, post.postUrl);
         if (!result.ok) {
           console.error(
-            `[content] アクション失敗: ${kind} (${result.error.kind}) ${result.error.message}`,
+            `[content] Action failed: ${kind} (${result.error.kind}) ${result.error.message}`,
           );
         }
       },
@@ -46,10 +46,10 @@ export function buildActionButtons(
 
   const openHomeButton: ActionButtonSpec = {
     kind: "open-home",
-    label: "ホームインスタンスで開く",
+    label: "Open in home instance",
     onClick: async () => {
       const resolvedUrl = await account.resolvePost(post.postUrl);
-      console.log(`[content] ホームインスタンスで開く: ${resolvedUrl}`);
+      console.log(`[content] Open in home instance: ${resolvedUrl}`);
     },
   };
 

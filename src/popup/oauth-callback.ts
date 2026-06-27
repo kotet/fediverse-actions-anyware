@@ -22,7 +22,7 @@ function showStatus(
 async function completeOAuth(code: string): Promise<void> {
   const pending = await loadPendingOAuth();
   if (!pending) {
-    throw new Error("認証処理の状態が見つかりません。もう一度お試しください。");
+    throw new Error("Authentication state not found. Please try again.");
   }
 
   const accessToken = await exchangeAuthCode(
@@ -60,21 +60,21 @@ async function main(): Promise<void> {
   const code = params.get("code");
 
   if (error) {
-    showStatus(`認証が拒否されました: ${error}`, "error");
+    showStatus(`Authentication denied: ${error}`, "error");
     return;
   }
 
   if (!code) {
-    showStatus("認証コードが見つかりません。", "error");
+    showStatus("Authentication code not found.", "error");
     return;
   }
 
   try {
     await completeOAuth(code);
-    showStatus("アカウントが正常に追加されました。", "success");
+    showStatus("Account successfully added.", "success");
   } catch (err) {
     showStatus(
-      `エラーが発生しました: ${err instanceof Error ? err.message : "不明なエラー"}`,
+      `An error occurred: ${err instanceof Error ? err.message : "Unknown error"}`,
       "error",
     );
   }
