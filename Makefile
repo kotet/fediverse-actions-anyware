@@ -1,5 +1,8 @@
 .PHONY: build lint typecheck
 
+run: build
+	web-ext run --source-dir dist
+
 build:
 	node build.mjs
 	web-ext build --source-dir dist --overwrite-dest

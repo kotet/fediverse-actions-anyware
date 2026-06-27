@@ -6,7 +6,10 @@ RUN --mount=type=cache,target=/var/cache/apt \
     && apt-get -y install --no-install-recommends \
         libgtk-3-0 \
         libasound2 \
-        libx11-xcb1
+        libx11-xcb1 \
+        fonts-noto \
+        fonts-noto-cjk \
+        fonts-noto-color-emoji
 
 # install firefox dev edition
 RUN curl --location "https://download.mozilla.org/?product=firefox-devedition-latest-ssl&os=linux64&lang=en-US" | tar --extract --verbose --preserve-permissions --xz --directory /opt

@@ -1,5 +1,5 @@
 body {
-  width: 240px;
+  width: 280px;
   padding: 12px;
   font-family: sans-serif;
 }
@@ -7,4 +7,110 @@ body {
 h1 {
   font-size: 14px;
   margin: 0 0 8px;
+}
+
+h2 {
+  font-size: 12px;
+  margin: 0 0 6px;
+  color: #555;
+}
+
+.account-list {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+}
+
+.account-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-bottom: 6px;
+}
+
+.account-item.active {
+  border-color: #5a8;
+  background: #f3faf6;
+}
+
+.account-radio {
+  margin: 0;
+}
+
+.account-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.account-label {
+  font-size: 13px;
+  font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-meta {
+  font-size: 11px;
+  color: #888;
+}
+
+.account-remove {
+  border: none;
+  background: transparent;
+  color: #c44;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px 4px;
+}
+
+.empty-message {
+  font-size: 12px;
+  color: #888;
+  margin: 0 0 8px;
+}
+
+.hidden {
+  display: none;
+}
+
+.field {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.field-label {
+  display: block;
+  font-size: 11px;
+  color: #888;
+  margin-bottom: 2px;
+}
+
+.field-input {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 13px;
+  padding: 5px 6px;
+}
+
+.form-error {
+  font-size: 12px;
+  color: #c44;
+  margin: 0 0 8px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+button {
+  font-size: 13px;
+  padding: 6px 10px;
+  cursor: pointer;
 }
