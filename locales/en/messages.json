@@ -1,0 +1,25 @@
+{
+  "extensionName": { "message": "Fediverse Actions Anyware" },
+  "extensionDescription": { "message": "Adds fediverse action buttons to any web page." },
+  "popupHomeAccountsHeading": { "message": "Home Accounts" },
+  "popupEmptyAccountsMessage": { "message": "No accounts registered." },
+  "popupShowAddAccountButton": { "message": "Add Account" },
+  "popupAddAccountHeading": { "message": "Add Account" },
+  "popupSoftwareLabel": { "message": "Type" },
+  "popupSoftwareMockOption": { "message": "Mock" },
+  "popupInstanceLabel": { "message": "Instance" },
+  "popupCancelButton": { "message": "Back" },
+  "popupSubmitButton": { "message": "Add" },
+  "authStateAuthenticated": { "message": "Authenticated" },
+  "authStateUnauthenticated": { "message": "Unauthenticated" },
+  "authStateError": { "message": "Error" },
+  "accountActivateTitle": { "message": "Set as active" },
+  "accountRemoveTitle": { "message": "Remove" },
+  "mastodonNotImplementedError": { "message": "Adding a Mastodon account is not yet implemented." },
+  "mockAccountLabel": {
+    "message": "Mock Account $COUNT$",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  }
+}

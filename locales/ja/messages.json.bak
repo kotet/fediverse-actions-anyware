@@ -1,0 +1,58 @@
+{
+  "extensionName": {
+    "message": "Fediverse Actions Anyware"
+  },
+  "extensionDescription": {
+    "message": "Adds fediverse action buttons to any web page."
+  },
+  "popupHomeAccountsHeading": {
+    "message": "ホームアカウント"
+  },
+  "popupEmptyAccountsMessage": {
+    "message": "登録済みのアカウントはありません。"
+  },
+  "popupShowAddAccountButton": {
+    "message": "アカウントを追加"
+  },
+  "popupAddAccountHeading": {
+    "message": "アカウントを追加"
+  },
+  "popupSoftwareLabel": {
+    "message": "種別"
+  },
+  "popupSoftwareMockOption": {
+    "message": "モック"
+  },
+  "popupInstanceLabel": {
+    "message": "インスタンス"
+  },
+  "popupCancelButton": {
+    "message": "戻る"
+  },
+  "popupSubmitButton": {
+    "message": "追加"
+  },
+  "authStateAuthenticated": {
+    "message": "認証済み"
+  },
+  "authStateUnauthenticated": {
+    "message": "未認証"
+  },
+  "accountActivateTitle": {
+    "message": "アクティブにする"
+  },
+  "accountRemoveTitle": {
+    "message": "削除"
+  },
+  "mastodonNotImplementedError": {
+    "message": "Mastodon アカウントの追加は未実装です。"
+  },
+  "mockAccountLabel": {
+    "message": "モックアカウント $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  }
+}

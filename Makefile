@@ -8,6 +8,7 @@ build:
 	web-ext build --source-dir dist --overwrite-dest
 
 lint: build
+	node scripts/check-i18n.mjs
 	web-ext lint --source-dir dist
 
 typecheck:

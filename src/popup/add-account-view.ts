@@ -5,6 +5,7 @@ import {
   type HomeAccountStoreState,
   loadAccountStore,
 } from "../core";
+import { getMessage } from "../i18n";
 
 /** Callbacks to notify the caller of the result of operations on the add account view. */
 export interface AddAccountViewCallbacks {
@@ -58,7 +59,7 @@ export function setupAddAccountView(callbacks: AddAccountViewCallbacks): void {
     const software = softwareSelect.value as HomeAccountSoftware;
     if (software === "mastodon") {
       // Instance selection is done in the popup; OAuth is expected to be handled in a dedicated tab.
-      errorMessage.textContent = "Mastodon アカウントの追加は未実装です。";
+      errorMessage.textContent = getMessage("mastodonNotImplementedError");
       errorMessage.classList.remove("hidden");
       return;
     }
@@ -84,7 +85,7 @@ async function buildMockAccountConfig(): Promise<HomeAccountConfig> {
   return {
     id: crypto.randomUUID(),
     software: "mock",
-    label: `モックアカウント ${mockCount + 1}`,
+    label: getMessage("mockAccountLabel", [String(mockCount + 1)]),
     mockAuthState: "authenticated",
   };
 }

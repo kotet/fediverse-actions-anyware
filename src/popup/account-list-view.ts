@@ -5,12 +5,12 @@ import {
   removeAccount,
   setActiveAccount,
 } from "../core";
+import { getMessage } from "../i18n";
 
-/** Display labels for authentication states. */
-const AUTH_STATE_LABELS: Record<AuthState, string> = {
-  authenticated: "認証済み",
-  unauthenticated: "未認証",
-  error: "エラー",
+const AUTH_STATE_KEYS: Record<AuthState, Parameters<typeof getMessage>[0]> = {
+  authenticated: "authStateAuthenticated",
+  unauthenticated: "authStateUnauthenticated",
+  error: "authStateError",
 };
 
 /**
@@ -52,7 +52,7 @@ function createAccountItem(
   radio.name = "active-account";
   radio.className = "account-radio";
   radio.checked = isActive;
-  radio.title = "アクティブにする";
+  radio.title = getMessage("accountActivateTitle");
   radio.addEventListener("change", () => {
     void setActiveAccount(account.id).then(renderAccountList);
   });
@@ -67,7 +67,7 @@ function createAccountItem(
   const meta = document.createElement("div");
   meta.className = "account-meta";
   const authStateLabel = account.mockAuthState
-    ? AUTH_STATE_LABELS[account.mockAuthState]
+    ? getMessage(AUTH_STATE_KEYS[account.mockAuthState])
     : "-";
   meta.textContent = `${account.software} / ${authStateLabel}`;
 
@@ -77,7 +77,7 @@ function createAccountItem(
   removeButton.type = "button";
   removeButton.className = "account-remove";
   removeButton.textContent = "✕";
-  removeButton.title = "削除";
+  removeButton.title = getMessage("accountRemoveTitle");
   removeButton.addEventListener("click", () => {
     void removeAccount(account.id).then(renderAccountList);
   });
