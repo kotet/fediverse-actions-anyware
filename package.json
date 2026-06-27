@@ -1,0 +1,23 @@
+{
+  "name": "fediverse-actions-anyware",
+  "version": "1.0.0",
+  "description": "Adds fediverse action buttons to any web page.",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kotet/fediverse-actions-anyware.git"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@types/firefox-webext-browser": "^143.0.0",
+    "esbuild": "^0.28.1",
+    "typescript": "^6.0.3"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true
+  }
+}

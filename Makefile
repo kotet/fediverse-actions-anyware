@@ -1,7 +1,11 @@
-.PHONY: build lint
+.PHONY: build lint typecheck
 
 build:
-	web-ext build
+	node build.mjs
+	web-ext build --source-dir dist --overwrite-dest
 
-lint:
-	web-ext lint
+lint: build
+	web-ext lint --source-dir dist
+
+typecheck:
+	npx tsc --noEmit

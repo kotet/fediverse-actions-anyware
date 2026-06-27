@@ -8,19 +8,31 @@
 
 | ツール | 用途 | 備考 |
 |--------|------|------|
-| `web-ext lint` | マニフェストやコードの静的検証 | エラー 0 を目指す |
+| `make build` | TypeScript のコンパイルと `dist/` への出力 | esbuild + 静的ファイルコピー |
+| `make lint` | マニフェストやコードの静的検証 | `make build` を内包、エラー 0 を目指す |
+| `make typecheck` | TypeScript の型チェックのみ | ビルドせず型エラーだけ確認 |
 | firefox-devtools MCP | Firefox の操作・拡張機能のインストール | Claude Code から直接操作できる |
+
+## ディレクトリ構成
+
+| パス | 役割 |
+|------|------|
+| `src/` | TypeScript ソースファイル |
+| `dist/` | ビルド成果物（gitignore 対象） |
+| `manifest.json` | 拡張機能マニフェスト（ビルド時に `dist/` へコピー） |
+| `src/popup/popup.html`, `src/popup/popup.css` | 静的ファイル（ビルド時に `dist/` へコピー） |
 
 ## 開発サイクル
 
 ### 1. コードを編集する
 
-`manifest.json`・`content/`・`popup/`・`background/` 以下のファイルを編集します。
+`src/background/`・`src/content/`・`src/popup/` 以下の `.ts` ファイルを編集します。
+`manifest.json` や `src/popup/popup.html`・`src/popup/popup.css` の変更も `make build` で `dist/` に反映されます。
 
-### 2. lint で検証する
+### 2. ビルドして lint で検証する
 
 ```sh
-web-ext lint
+make lint
 ```
 
 エラーがなければ次のステップへ進みます。警告は内容を確認したうえで対応を判断します。
@@ -32,7 +44,7 @@ Claude Code から次の MCP ツールを呼び出します。
 ```
 mcp__firefox-devtools__install_extension
   type: "path"
-  path: "/workspaces/fediverse-actions-anyware"
+  path: "/workspaces/fediverse-actions-anyware/dist"
 ```
 
 すでにインストール済みの場合は再インストールになります（リロード操作は不要）。
