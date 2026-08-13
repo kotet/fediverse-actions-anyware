@@ -1,4 +1,4 @@
-.PHONY: build lint typecheck
+.PHONY: build lint typecheck test
 
 run: build
 	web-ext run --source-dir dist
@@ -13,3 +13,6 @@ lint: build
 
 typecheck:
 	npx tsc --noEmit
+
+test:
+	npm test

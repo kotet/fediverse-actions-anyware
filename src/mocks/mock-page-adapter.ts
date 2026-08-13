@@ -16,9 +16,7 @@ export class MockPageAdapter implements PageAdapter {
     const articles = Array.from(document.querySelectorAll("article"));
     return articles.map((article, index) => ({
       postUrl: `https://mock.example/users/mock_user/statuses/${index}`,
-      // Treated as having no existing buttons.
-      existingButtons: [],
-      // The insertion target is the <article> element itself.
+      existingButtons: {},
       insertionTarget: article,
     }));
   }

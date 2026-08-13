@@ -43,6 +43,12 @@ export type ButtonRenderModeKind =
   | "popup";
 
 /**
+ * Kinds of existing action buttons on the page that can be identified by the page adapter.
+ * Maps to the action labels used by the target client's UI.
+ */
+export type ButtonKind = "reply" | "boost" | "favourite" | "bookmark" | "more";
+
+/**
  * Information about a single post extracted by the page adapter.
  *
  * The button render mode uses this information to render action buttons.
@@ -50,8 +56,8 @@ export type ButtonRenderModeKind =
 export interface ExtractedPost {
   /** Canonical URL of the target post (URL on the target instance). */
   readonly postUrl: string;
-  /** Existing action button elements already on the page. Empty array if there are no original buttons. */
-  readonly existingButtons: readonly HTMLElement[];
+  /** Existing action button elements keyed by their action kind. Empty object if there are no original buttons. */
+  readonly existingButtons: Readonly<Partial<Record<ButtonKind, HTMLElement>>>;
   /** The element to insert the extension's buttons into. */
   readonly insertionTarget: HTMLElement;
 }
