@@ -23,7 +23,7 @@ export interface ActionButtonSpec {
  * Button render mode abstraction.
  *
  * Responsibility: switching the method of rendering action buttons.
- * Displays action buttons in one of three ways — "replace", "append", or "popup" —
+ * Displays action buttons in one of three ways — "replace-underline", "append", or "popup" —
  * based on the existing button elements and insertion target from the page adapter.
  * The implementation is switched based on user settings.
  *

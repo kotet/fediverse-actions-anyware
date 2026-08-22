@@ -35,8 +35,11 @@ export type ApiActionKind = Exclude<PostActionKind, "open-home">;
 
 /** Button render mode. Switched by user settings. */
 export type ButtonRenderModeKind =
-  /** Replaces existing action buttons with the extension's buttons. */
-  | "replace"
+  /**
+   * Replaces existing action buttons with the extension's buttons, each marked
+   * with an accent underline so the changed behavior is visible.
+   */
+  | "replace-underline"
   /** Appends the extension's buttons alongside existing action buttons. */
   | "append"
   /** Displays as a popup menu. */

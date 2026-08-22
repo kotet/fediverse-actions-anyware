@@ -26,6 +26,7 @@ await esbuild.build({
 
 await Promise.all([
   cp("manifest.json", "dist/manifest.json"),
+  cp("src/content/content.css", "dist/content/content.css"),
   cp("src/popup/popup.html", "dist/popup/popup.html"),
   cp("src/popup/popup.css", "dist/popup/popup.css"),
   cp("src/popup/oauth-callback.html", "dist/popup/oauth-callback.html"),

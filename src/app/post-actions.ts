@@ -4,16 +4,22 @@ import type {
   ExtractedPost,
   HomeAccount,
 } from "../core";
+import { getMessage, type MessageKey } from "../i18n";
 
-/** Mapping of API action kinds to display labels. */
-const API_ACTION_LABELS: ReadonlyArray<{
+/**
+ * API action kinds offered to the user, with the message key for their label.
+ *
+ * `reply` is intentionally absent: `HomeAccount.performAction` has no reply
+ * implementation yet, so offering the action would only produce a button that
+ * silently fails. It is added back once composing a reply is supported.
+ */
+const API_ACTION_LABEL_KEYS: ReadonlyArray<{
   kind: ApiActionKind;
-  label: string;
+  labelKey: MessageKey;
 }> = [
-  { kind: "favourite", label: "Favourite" },
-  { kind: "boost", label: "Boost" },
-  { kind: "bookmark", label: "Bookmark" },
-  { kind: "reply", label: "Reply" },
+  { kind: "favourite", labelKey: "actionLabelFavourite" },
+  { kind: "boost", labelKey: "actionLabelBoost" },
+  { kind: "bookmark", labelKey: "actionLabelBookmark" },
 ];
 
 /**
@@ -29,10 +35,10 @@ export function buildActionButtons(
   account: HomeAccount,
   post: ExtractedPost,
 ): ActionButtonSpec[] {
-  const apiButtons: ActionButtonSpec[] = API_ACTION_LABELS.map(
-    ({ kind, label }) => ({
+  const apiButtons: ActionButtonSpec[] = API_ACTION_LABEL_KEYS.map(
+    ({ kind, labelKey }) => ({
       kind,
-      label,
+      label: getMessage(labelKey),
       onClick: async () => {
         const result = await account.performAction(kind, post.postUrl);
         if (!result.ok) {
@@ -46,7 +52,7 @@ export function buildActionButtons(
 
   const openHomeButton: ActionButtonSpec = {
     kind: "open-home",
-    label: "Open in home instance",
+    label: getMessage("actionLabelOpenHome"),
     onClick: async () => {
       const resolvedUrl = await account.resolvePost(post.postUrl);
       console.log(`[content] Open in home instance: ${resolvedUrl}`);

@@ -1,0 +1,40 @@
+/*
+ * Styles for the replace-underline button render mode.
+ *
+ * These rules land in third-party pages, so every selector is prefixed with `faa-`.
+ * `!important` is required throughout: content script stylesheets are author-origin
+ * and lose specificity ties against the host page's own rules.
+ */
+
+.faa-button {
+  /* Containing block for the underline. Does not change the box geometry. */
+  position: relative !important;
+
+  /*
+   * Scoped to the button rather than :root so the custom property does not leak
+   * into the host page. Chosen to clear 3:1 contrast against both a white and a
+   * dark Mastodon background, since Mastodon's theme is a server-side user setting
+   * and cannot be detected with prefers-color-scheme.
+   */
+  --faa-accent: #0f8a8a;
+}
+
+.faa-button::after {
+  content: "" !important;
+  /* Absolutely positioned so the indicator never shifts the host's layout. */
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  /*
+   * Sits just below the button box rather than inside it. Mastodon's `.icon-button`
+   * has no padding, so its box is exactly the 24px icon; at `bottom: 0` the
+   * indicator would overlap the glyph. Adding padding instead would grow the button
+   * and shift the action bar, which absolute positioning avoids.
+   */
+  bottom: -3px !important;
+  height: 2px !important;
+  border-radius: 1px !important;
+  background-color: var(--faa-accent) !important;
+  /* Keeps hit-testing identical to the host's button. */
+  pointer-events: none !important;
+}

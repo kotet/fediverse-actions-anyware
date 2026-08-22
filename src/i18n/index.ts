@@ -20,6 +20,11 @@ const MESSAGE_KEYS = [
   "mastodonOAuthStarted",
   "mastodonOAuthError",
   "mockAccountLabel",
+  "actionLabelFavourite",
+  "actionLabelBoost",
+  "actionLabelBookmark",
+  "actionLabelOpenHome",
+  "actionButtonHomeAccountTitle",
 ] as const;
 
 export type MessageKey = (typeof MESSAGE_KEYS)[number];

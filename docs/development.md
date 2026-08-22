@@ -20,14 +20,14 @@
 | `src/` | TypeScript ソースファイル |
 | `dist/` | ビルド成果物（gitignore 対象） |
 | `manifest.json` | 拡張機能マニフェスト（ビルド時に `dist/` へコピー） |
-| `src/popup/popup.html`, `src/popup/popup.css` | 静的ファイル（ビルド時に `dist/` へコピー） |
+| `src/popup/popup.html`, `src/popup/popup.css`, `src/content/content.css` | 静的ファイル（ビルド時に `dist/` へコピー） |
 
 ## 開発サイクル
 
 ### 1. コードを編集する
 
 `src/background/`・`src/content/`・`src/popup/` 以下の `.ts` ファイルを編集します。
-`manifest.json` や `src/popup/popup.html`・`src/popup/popup.css` の変更も `make build` で `dist/` に反映されます。
+`manifest.json` や `src/popup/popup.html`・`src/popup/popup.css`・`src/content/content.css` の変更も `make build` で `dist/` に反映されます。
 
 ### 2. ビルドして lint で検証する
 

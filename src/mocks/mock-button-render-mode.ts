@@ -14,7 +14,7 @@ import type {
 export class MockButtonRenderMode implements ButtonRenderMode {
   readonly mode: ButtonRenderModeKind;
 
-  constructor(mode: ButtonRenderModeKind = "replace") {
+  constructor(mode: ButtonRenderModeKind = "replace-underline") {
     this.mode = mode;
   }
 

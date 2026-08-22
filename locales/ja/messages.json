@@ -63,5 +63,25 @@
   },
   "authStateError": {
     "message": "エラー"
+  },
+  "actionLabelFavourite": {
+    "message": "お気に入り"
+  },
+  "actionLabelBoost": {
+    "message": "ブースト"
+  },
+  "actionLabelBookmark": {
+    "message": "ブックマーク"
+  },
+  "actionLabelOpenHome": {
+    "message": "ホームインスタンスで開く"
+  },
+  "actionButtonHomeAccountTitle": {
+    "message": "$ACTION$（ホームアカウントで実行）",
+    "placeholders": {
+      "action": {
+        "content": "$1"
+      }
+    }
   }
 }

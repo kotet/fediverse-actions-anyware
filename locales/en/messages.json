@@ -23,5 +23,15 @@
     "placeholders": {
       "count": { "content": "$1" }
     }
+  },
+  "actionLabelFavourite": { "message": "Favourite" },
+  "actionLabelBoost": { "message": "Boost" },
+  "actionLabelBookmark": { "message": "Bookmark" },
+  "actionLabelOpenHome": { "message": "Open in home instance" },
+  "actionButtonHomeAccountTitle": {
+    "message": "$ACTION$ with your home account",
+    "placeholders": {
+      "action": { "content": "$1" }
+    }
   }
 }

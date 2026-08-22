@@ -1,5 +1,5 @@
 import type { ButtonKind, ExtractedPost } from "../core";
-import type { PageAdapter } from "../core";
+import type { ActionButtonReplacer, PageAdapter } from "../core";
 
 const ICON_CLASS_TO_BUTTON_KIND: ReadonlyMap<string, ButtonKind> = new Map([
   ["icon-reply", "reply"],
@@ -9,12 +9,30 @@ const ICON_CLASS_TO_BUTTON_KIND: ReadonlyMap<string, ButtonKind> = new Map([
   ["icon-ellipsis-h", "more"],
 ]);
 
+/**
+ * Attribute marking a button this extension inserted. The value is the button kind.
+ *
+ * Written by {@link MastodonPageAdapter.replaceActionButton} and read back by
+ * {@link collectButtonsByKind} and {@link MastodonPageAdapter.restoreActionButtons},
+ * so both sides of the contract stay inside this module.
+ */
+const EXTENSION_BUTTON_ATTRIBUTE = "data-faa-action";
+
+/** Attributes Mastodon uses to disable a button, which a usable substitute must not carry. */
+const DISABLING_ATTRIBUTES: readonly string[] = ["disabled", "aria-disabled"];
+
+/** Class Mastodon adds to a button it has disabled, e.g. bookmark for anonymous viewers. */
+const DISABLED_CLASS = "disabled";
+
 function collectButtonsByKind(
   actionBar: HTMLElement,
 ): Readonly<Partial<Record<ButtonKind, HTMLElement>>> {
   const result: Partial<Record<ButtonKind, HTMLElement>> = {};
   for (const button of actionBar.querySelectorAll("button")) {
     if (!(button instanceof HTMLElement)) continue;
+    // Substitutes inserted by this extension keep the host's icon markup, so they
+    // would otherwise be picked up here and shadow the real host button.
+    if (button.hasAttribute(EXTENSION_BUTTON_ATTRIBUTE)) continue;
     const svg = button.querySelector("svg");
     if (!svg) continue;
     for (const cls of svg.classList) {
@@ -33,8 +51,13 @@ function collectButtonsByKind(
  *
  * Targets individual status pages (e.g. `/@user/123`) which display
  * one detailed status followed by thread replies.
+ *
+ * Supports action button substitution: Mastodon's buttons carry their icon as
+ * inline SVG, so cloning one reproduces the host's appearance exactly. The host
+ * element is only hidden, never removed, because Mastodon's React tree keeps a
+ * reference to it and would fail on a later re-render.
  */
-export class MastodonPageAdapter implements PageAdapter {
+export class MastodonPageAdapter implements PageAdapter, ActionButtonReplacer {
   isSupportedPage(): boolean {
     return document.querySelector("#mastodon") !== null;
   }
@@ -70,5 +93,48 @@ export class MastodonPageAdapter implements PageAdapter {
     }
 
     return posts;
+  }
+
+  replaceActionButton(post: ExtractedPost, kind: ButtonKind): HTMLElement | null {
+    const original = post.existingButtons[kind];
+    if (original === undefined) return null;
+    const parent = original.parentElement;
+    if (parent === null) return null;
+
+    // A deep clone reproduces the icon, sizing and hover styling. Event listeners
+    // are not cloned, so the host's behavior is dropped without any extra work.
+    const substitute = original.cloneNode(true);
+    if (!(substitute instanceof HTMLElement)) return null;
+
+    // Mastodon disables buttons that an anonymous viewer cannot use, via both the
+    // attribute and a class. The substitute acts through the home account instead,
+    // so every trace of that disabled state has to go.
+    for (const attribute of DISABLING_ATTRIBUTES) {
+      substitute.removeAttribute(attribute);
+    }
+    substitute.classList.remove(DISABLED_CLASS);
+    if (substitute instanceof HTMLButtonElement) {
+      substitute.disabled = false;
+    }
+    // The clone would otherwise duplicate the host's id.
+    substitute.removeAttribute("id");
+    substitute.setAttribute(EXTENSION_BUTTON_ATTRIBUTE, kind);
+
+    // Inserting before the original keeps the host button last in DOM order, which
+    // guards against scans that resolve duplicates by taking the last match.
+    parent.insertBefore(substitute, original);
+    original.style.display = "none";
+    return substitute;
+  }
+
+  restoreActionButtons(post: ExtractedPost): void {
+    for (const substitute of post.insertionTarget.querySelectorAll(
+      `[${EXTENSION_BUTTON_ATTRIBUTE}]`,
+    )) {
+      substitute.remove();
+    }
+    for (const original of Object.values(post.existingButtons)) {
+      original.style.display = "";
+    }
   }
 }
