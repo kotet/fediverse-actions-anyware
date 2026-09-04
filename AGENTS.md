@@ -3,6 +3,7 @@
 ## 関連ドキュメント
 
 - [docs/development.md](docs/development.md) — 開発フロー（lint・インストール・動作確認の手順）
+- [docs/human-only-verification.md](docs/human-only-verification.md) — 動作確認を人間とエージェントに振り分ける基準（人間へ依頼する手順は常設せず都度書く）
 
 ## ブラウザ操作
 
