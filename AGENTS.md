@@ -7,31 +7,31 @@
 
 ## ブラウザ操作
 
-Firefox の操作には **firefox-devtools MCP** を使用します。
+Firefox の操作には **firefox-devtools MCP** を使う。
 
 ### `web-ext run` は使用しない
 
-`web-ext run` は MCP が接続している Firefox とは別プロセスを起動するため、MCP 経由での操作ができません。拡張機能のインストールには `mcp__firefox-devtools__install_extension` を使用してください。
+`web-ext run` は MCP が接続している Firefox とは別プロセスを起動するため、MCP 経由で操作できない。拡張機能のインストールには `mcp__firefox-devtools__install_extension` を使う。
 
 ### ポップアップは直接開けない
 
-`moz-extension://` への `navigate_page` / `new_page` は BiDi が拒否します（`unsupported operation`）。ポップアップ UI を操作する代わりに、拡張機能ページの realm でストレージを直接書き込みます。
+`moz-extension://` への `navigate_page` / `new_page` は BiDi が拒否する（`unsupported operation`）。ポップアップ UI を操作する代わりに、拡張機能ページの realm でストレージを直接書き込む。
 
 1. 拡張機能の内部 UUID を Firefox プロファイルから取得する
    - プロファイルパス: `ps -eo args | grep -o '\-profile [^ ]*'`
    - `grep -o '"fediverse-actions-anyware@example.com[^,}]*' <profile>/prefs.js`
 2. https ページから `window.open("moz-extension://<uuid>/popup/oauth-callback.html")` を実行する
-   - `oauth-callback.html` は `web_accessible_resources` に含まれるため、この経路なら開けます
+   - `oauth-callback.html` は `web_accessible_resources` に含まれるため、この経路なら開ける
 3. 開いたタブを `select_page` で選び、`evaluate_script` で `browser.storage.local.set(...)` を実行する
-   - 拡張機能ページの realm には `browser` API があります。コンテンツスクリプトの realm には `evaluate_script` から到達できません
+   - 拡張機能ページの realm には `browser` API がある。コンテンツスクリプトの realm には `evaluate_script` から到達できない
 
 ### コンソール出力の取得
 
-ページのコンソールを読むツールはありません。`restart_firefox` で `prefs: { "devtools.console.stdout.content": true }` と `env: ["MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1"]` を指定すると、`console.log` が Firefox の stdout に流れ、`get_firefox_output` で読めるようになります。再起動でプロファイルが作り直されるため、拡張機能の再インストールと UUID の取り直しが必要です。
+ページのコンソールを読むツールはない。`restart_firefox` で `prefs: { "devtools.console.stdout.content": true }` と `env: ["MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1"]` を指定すると、`console.log` が Firefox の stdout に流れ、`get_firefox_output` で読めるようになる。再起動でプロファイルが作り直されるため、拡張機能の再インストールと UUID の取り直しが必要。
 
 ### ページの realm には CSP が効く
 
-`evaluate_script` はページの realm で動くため、Mastodon の CSP により `<style>` 要素の注入がブロックされます（`sheet` が生成されません）。スタイルを試す場合は `element.style.setProperty(..., "important")` を使ってください。コンテンツスクリプトが注入する CSS はページの CSP の対象外です。
+`evaluate_script` はページの realm で動くため、Mastodon の CSP により `<style>` 要素の注入がブロックされる（`sheet` が生成されない）。スタイルを試す場合は `element.style.setProperty(..., "important")` を使う。コンテンツスクリプトが注入する CSS はページの CSP の対象外。
 
 ## Firefox MV3 の注意点
 
