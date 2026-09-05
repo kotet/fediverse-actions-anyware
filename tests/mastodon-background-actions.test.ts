@@ -293,7 +293,8 @@ describe("handleMastodonActionRequest", () => {
     [403, "forbidden"],
     [404, "not-found"],
     [500, "network"],
-    [429, "failed"],
+    [429, "rate-limited"],
+    [418, "failed"],
   ])("HTTP %i は %s として報告される", async (status, kind) => {
     stubMastodonApi(true, status);
     const result = await handleMastodonActionRequest({

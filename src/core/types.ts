@@ -87,6 +87,13 @@ export type ActionErrorKind =
   | "not-found"
   /** Insufficient permissions. */
   | "forbidden"
+  /**
+   * Too many requests in the allotted window.
+   *
+   * Kept apart from `failed` because it is the one failure that passes on its
+   * own: the user only has to wait, which no other kind's remedy resembles.
+   */
+  | "rate-limited"
   /** Other operation failures. */
   | "failed";
 

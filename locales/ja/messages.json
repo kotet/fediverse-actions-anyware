@@ -125,5 +125,77 @@
         "content": "$1"
       }
     }
+  },
+  "actionStateRunning": {
+    "message": "$ACTION$を実行中…",
+    "placeholders": {
+      "action": {
+        "content": "$1"
+      }
+    }
+  },
+  "actionStateSucceeded": {
+    "message": "$ACTION$をホームアカウントで実行しました",
+    "placeholders": {
+      "action": {
+        "content": "$1"
+      }
+    }
+  },
+  "actionStateActive": {
+    "message": "$ACTION$済み（ホームアカウント）",
+    "placeholders": {
+      "action": {
+        "content": "$1"
+      }
+    }
+  },
+  "actionErrorUnauthenticated": {
+    "message": "$ACTION$に失敗しました: ホームアカウントに再ログインしてください",
+    "placeholders": {
+      "action": {
+        "content": "$1"
+      }
+    }
+  },
+  "actionErrorNetwork": {
+    "message": "$ACTION$に失敗しました: ホームインスタンスに接続できません",
+    "placeholders": {
+      "action": {
+        "content": "$1"
+      }
+    }
+  },
+  "actionErrorNotFound": {
+    "message": "$ACTION$に失敗しました: 投稿がホームインスタンスで見つかりません",
+    "placeholders": {
+      "action": {
+        "content": "$1"
+      }
+    }
+  },
+  "actionErrorForbidden": {
+    "message": "$ACTION$に失敗しました: ホームアカウントに権限がありません",
+    "placeholders": {
+      "action": {
+        "content": "$1"
+      }
+    }
+  },
+  "actionErrorRateLimited": {
+    "message": "$ACTION$に失敗しました: 回数制限に達しました。数分おいてからお試しください",
+    "placeholders": {
+      "action": {
+        "content": "$1"
+      }
+    }
+  },
+  "actionErrorFailed": {
+    "message": "$ACTION$に失敗しました",
+    "placeholders": {
+      "action": {
+        "content": "$1"
+      }
+    }
   }
 }

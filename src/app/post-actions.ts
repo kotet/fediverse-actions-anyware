@@ -1,10 +1,8 @@
 import type {
   ActionButtonSpec,
-  ActionResult,
   ApiActionKind,
   ExtractedPost,
   HomeAccount,
-  PostActionKind,
 } from "../core";
 import { getMessage, type MessageKey } from "../i18n";
 
@@ -17,19 +15,6 @@ const API_ACTION_LABEL_KEYS: ReadonlyArray<{
   { kind: "boost", labelKey: "actionLabelBoost" },
   { kind: "bookmark", labelKey: "actionLabelBookmark" },
 ];
-
-/**
- * Reports a failed action.
- *
- * Only reaches the console for now. Stage 2 of the release plan turns this into a
- * notification the user can see, which is what the error kinds exist for.
- */
-function reportActionResult(kind: PostActionKind, result: ActionResult): void {
-  if (result.ok) return;
-  console.error(
-    `[content] Action failed: ${kind} (${result.error.kind}) ${result.error.message}`,
-  );
-}
 
 /**
  * Builds action button specs from the active account and post to pass to the render mode.
@@ -48,9 +33,10 @@ export function buildActionButtons(
     ({ kind, labelKey }) => ({
       kind,
       label: getMessage(labelKey),
-      onClick: async () => {
-        reportActionResult(kind, await account.performAction(kind, post.postUrl));
-      },
+      // Each of these puts the post into a state the home account keeps: the
+      // button goes on showing it once the call succeeds.
+      activatesOnSuccess: true,
+      onClick: () => account.performAction(kind, post.postUrl),
     }),
   );
 
@@ -59,9 +45,10 @@ export function buildActionButtons(
   const replyButton: ActionButtonSpec = {
     kind: "reply",
     label: getMessage("actionLabelReply"),
-    onClick: async () => {
-      reportActionResult("reply", await account.openPost(post.postUrl));
-    },
+    // Opening a tab changes nothing about the post, and the tab arriving in front
+    // of the user is itself the acknowledgement.
+    activatesOnSuccess: false,
+    onClick: () => account.openPost(post.postUrl),
   };
 
   return [...apiButtons, replyButton];

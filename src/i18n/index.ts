@@ -34,6 +34,15 @@ const MESSAGE_KEYS = [
   "actionLabelBoost",
   "actionLabelBookmark",
   "actionButtonHomeAccountTitle",
+  "actionStateRunning",
+  "actionStateSucceeded",
+  "actionStateActive",
+  "actionErrorUnauthenticated",
+  "actionErrorNetwork",
+  "actionErrorNotFound",
+  "actionErrorForbidden",
+  "actionErrorRateLimited",
+  "actionErrorFailed",
 ] as const;
 
 export type MessageKey = (typeof MESSAGE_KEYS)[number];

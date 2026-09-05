@@ -57,5 +57,59 @@
     "placeholders": {
       "action": { "content": "$1" }
     }
+  },
+  "actionStateRunning": {
+    "message": "$ACTION$: running…",
+    "placeholders": {
+      "action": { "content": "$1" }
+    }
+  },
+  "actionStateSucceeded": {
+    "message": "$ACTION$: done with your home account",
+    "placeholders": {
+      "action": { "content": "$1" }
+    }
+  },
+  "actionStateActive": {
+    "message": "$ACTION$: in effect on your home account",
+    "placeholders": {
+      "action": { "content": "$1" }
+    }
+  },
+  "actionErrorUnauthenticated": {
+    "message": "$ACTION$ failed: sign in to your home account again",
+    "placeholders": {
+      "action": { "content": "$1" }
+    }
+  },
+  "actionErrorNetwork": {
+    "message": "$ACTION$ failed: cannot reach your home instance",
+    "placeholders": {
+      "action": { "content": "$1" }
+    }
+  },
+  "actionErrorNotFound": {
+    "message": "$ACTION$ failed: the post was not found on your home instance",
+    "placeholders": {
+      "action": { "content": "$1" }
+    }
+  },
+  "actionErrorForbidden": {
+    "message": "$ACTION$ failed: your home account is not allowed to do this",
+    "placeholders": {
+      "action": { "content": "$1" }
+    }
+  },
+  "actionErrorRateLimited": {
+    "message": "$ACTION$ failed: too many requests, try again in a few minutes",
+    "placeholders": {
+      "action": { "content": "$1" }
+    }
+  },
+  "actionErrorFailed": {
+    "message": "$ACTION$ failed",
+    "placeholders": {
+      "action": { "content": "$1" }
+    }
   }
 }

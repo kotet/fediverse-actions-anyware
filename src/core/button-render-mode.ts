@@ -1,4 +1,5 @@
 import type {
+  ActionResult,
   ButtonRenderModeKind,
   ExtractedPost,
   PostActionKind,
@@ -15,8 +16,21 @@ export interface ActionButtonSpec {
   readonly kind: PostActionKind;
   /** Label displayed on the button. */
   readonly label: string;
-  /** Handler called when the button is clicked. */
-  readonly onClick: () => void | Promise<void>;
+  /**
+   * Whether succeeding leaves the post in this action's own state — favourited,
+   * boosted, bookmarked — which the button keeps showing afterwards.
+   *
+   * Replying has no such state: it opens the post on the home instance and leaves
+   * nothing behind on the target post, so its button returns to its resting look.
+   */
+  readonly activatesOnSuccess: boolean;
+  /**
+   * Handler called when the button is clicked.
+   *
+   * Reports how the action ended instead of swallowing it, because showing the
+   * outcome is the render mode's responsibility (spec 3.8).
+   */
+  readonly onClick: () => Promise<ActionResult>;
 }
 
 /**

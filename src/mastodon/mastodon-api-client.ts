@@ -49,6 +49,7 @@ function errorKindForStatus(status: number): ActionErrorKind {
   if (status === 401) return "unauthenticated";
   if (status === 403) return "forbidden";
   if (status === 404) return "not-found";
+  if (status === 429) return "rate-limited";
   if (status >= 500) return "network";
   return "failed";
 }
