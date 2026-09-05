@@ -23,8 +23,8 @@ export interface PageAdapter {
 }
 
 /**
- * Optional page adapter capability: substituting a host action button with an
- * equivalent-looking element that carries none of the host's behavior.
+ * Optional page adapter capability: putting the extension's action buttons into
+ * the host's action bar in place of the host's own.
  *
  * Only adapters whose target client allows this implement it. How to preserve the
  * host's appearance, how to neutralize its disabled state, and whether the host
@@ -44,15 +44,15 @@ export interface ActionButtonReplacer {
   replaceActionButton(post: ExtractedPost, kind: ButtonKind): HTMLElement | null;
 
   /**
-   * Undoes every substitution previously made on `post`, restoring the host buttons.
-   * Safe to call when nothing has been substituted.
+   * Removes every element previously placed on `post`, restoring the host buttons.
+   * Safe to call when nothing has been placed.
    */
   restoreActionButtons(post: ExtractedPost): void;
 }
 
 /**
- * Determines whether an adapter supports action button substitution, narrowing its
- * type so the capability can be used. Render modes that rely on substitution call
+ * Determines whether an adapter supports action button replacement, narrowing its
+ * type so the capability can be used. Render modes that rely on replacement call
  * this to decide whether they can operate on the current site.
  */
 export function supportsActionButtonReplacement(

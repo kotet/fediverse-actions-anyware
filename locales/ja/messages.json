@@ -106,6 +106,9 @@
   "authStateError": {
     "message": "エラー"
   },
+  "actionLabelReply": {
+    "message": "返信"
+  },
   "actionLabelFavourite": {
     "message": "お気に入り"
   },
@@ -114,9 +117,6 @@
   },
   "actionLabelBookmark": {
     "message": "ブックマーク"
-  },
-  "actionLabelOpenHome": {
-    "message": "ホームインスタンスで開く"
   },
   "actionButtonHomeAccountTitle": {
     "message": "$ACTION$（ホームアカウントで実行）",

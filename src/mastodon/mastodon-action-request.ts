@@ -18,8 +18,11 @@ export type MastodonActionRequest =
       readonly action: ApiActionKind;
       readonly postUrl: string;
     }
+  // Resolution and opening are one request: the sender may be a content script,
+  // which has no `tabs` API and would lose the click's transient activation while
+  // waiting for the resolution.
   | {
-      readonly type: "mastodon:resolve-post";
+      readonly type: "mastodon:open-post";
       readonly accountId: string;
       readonly postUrl: string;
     };
@@ -28,13 +31,13 @@ export type MastodonActionRequest =
 export interface MastodonActionResponses {
   "mastodon:get-auth-state": AuthState;
   "mastodon:perform-action": ActionResult;
-  "mastodon:resolve-post": string;
+  "mastodon:open-post": ActionResult;
 }
 
 const REQUEST_TYPES: ReadonlySet<string> = new Set([
   "mastodon:get-auth-state",
   "mastodon:perform-action",
-  "mastodon:resolve-post",
+  "mastodon:open-post",
 ]);
 
 /**

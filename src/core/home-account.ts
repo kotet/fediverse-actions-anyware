@@ -14,6 +14,16 @@ export interface HomeAccount {
   getAuthState(): Promise<AuthState>;
 
   /**
+   * Determines whether `url` is served by this account's own home instance.
+   *
+   * Answered from the configured instance alone, without reaching the network,
+   * so that a caller can ask it about every registered account cheaply.
+   *
+   * @param url Absolute URL to test. A string that is not a URL is not owned.
+   */
+  ownsUrl(url: string): boolean;
+
+  /**
    * Initiates the OAuth flow to log in.
    * Also used for re-authentication when already authenticated or after an auth error.
    */
@@ -23,7 +33,7 @@ export interface HomeAccount {
   logout(): Promise<void>;
 
   /**
-   * Executes an API action (favourite, boost, bookmark, reply) on the target post
+   * Executes an API action (favourite, boost, bookmark) on the target post
    * using the active account.
    *
    * @param action The kind of action to execute.
@@ -32,13 +42,17 @@ export interface HomeAccount {
   performAction(action: ApiActionKind, postUrl: string): Promise<ActionResult>;
 
   /**
-   * Resolves a remote post URL to a URL that can be opened on the home instance
-   * (for the "open in home instance" action).
+   * Resolves the target post onto the home instance and opens it there.
    *
-   * If the post does not exist on the home instance, fetches it before resolving.
+   * If the post does not exist on the home instance, fetches it before opening.
+   * Serves both "open in home instance" and "reply", which differ only in what the
+   * user does once the post is open.
+   *
+   * Resolving and opening are one operation rather than two because the caller may
+   * be a content script, which has no `tabs` API and would lose the click's
+   * transient activation while awaiting the resolution.
    *
    * @param postUrl URL of the target post (URL on the target instance).
-   * @returns URL to open the post on the home instance.
    */
-  resolvePost(postUrl: string): Promise<string>;
+  openPost(postUrl: string): Promise<ActionResult>;
 }

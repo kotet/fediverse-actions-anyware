@@ -9,7 +9,57 @@ import {
   buildAuthorizationUrl,
   registerMastodonApp,
 } from "./mastodon-api-client";
-import { sendMastodonActionRequest } from "./mastodon-action-request";
+import {
+  type MastodonActionRequest,
+  sendMastodonActionRequest,
+} from "./mastodon-action-request";
+
+/** Requests the background script answers with an {@link ActionResult}. */
+type ActionRequest = Extract<
+  MastodonActionRequest,
+  { type: "mastodon:perform-action" | "mastodon:open-post" }
+>;
+
+/**
+ * Sends a request whose response already reports failures, and turns a failure to
+ * deliver it into one of them.
+ *
+ * Delivery fails while the extension is reloading or updating. That is a failure
+ * inside the extension rather than one of the home instance, so it is reported as
+ * `failed`; `network` is reserved for the instance being out of reach, which the
+ * user would act on differently.
+ */
+async function requestActionFromBackground(
+  request: ActionRequest,
+): Promise<ActionResult> {
+  try {
+    return await sendMastodonActionRequest(request);
+  } catch (error) {
+    return {
+      ok: false,
+      error: {
+        kind: "failed",
+        message: `The extension's background script did not respond: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      },
+    };
+  }
+}
+
+/**
+ * Hostname of `url`, or `null` if it is not a parsable absolute URL.
+ *
+ * The hostname is what `URL` normalizes it to, which is lowercased and free of
+ * the port and any userinfo, so two hostnames obtained this way compare directly.
+ */
+function hostnameOf(url: string): string | null {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Home account backed by a Mastodon instance.
@@ -37,6 +87,15 @@ export class MastodonHomeAccount implements HomeAccount {
       type: "mastodon:get-auth-state",
       accountId: this.accountId,
     });
+  }
+
+  ownsUrl(url: string): boolean {
+    // The instance is stored as a bare hostname, but is only ever used as the
+    // authority of `https://<instance>/...`, so it is compared as that authority
+    // rather than as a string: a stray trailing slash or a differing case then
+    // does not change the answer.
+    const instanceHostname = hostnameOf(`https://${this.instance}`);
+    return instanceHostname !== null && hostnameOf(url) === instanceHostname;
   }
 
   async authenticate(): Promise<void> {
@@ -80,36 +139,20 @@ export class MastodonHomeAccount implements HomeAccount {
     action: ApiActionKind,
     postUrl: string,
   ): Promise<ActionResult> {
-    try {
-      return await sendMastodonActionRequest({
-        type: "mastodon:perform-action",
-        accountId: this.accountId,
-        action,
-        postUrl,
-      });
-    } catch (error) {
-      // Reaching the background script can fail while the extension is
-      // reloading or updating. The caller expects a result, not an exception.
-      return {
-        ok: false,
-        error: {
-          kind: "failed",
-          message: error instanceof Error ? error.message : "Unknown error",
-        },
-      };
-    }
+    return await requestActionFromBackground({
+      type: "mastodon:perform-action",
+      accountId: this.accountId,
+      action,
+      postUrl,
+    });
   }
 
-  async resolvePost(postUrl: string): Promise<string> {
-    try {
-      return await sendMastodonActionRequest({
-        type: "mastodon:resolve-post",
-        accountId: this.accountId,
-        postUrl,
-      });
-    } catch {
-      return postUrl;
-    }
+  async openPost(postUrl: string): Promise<ActionResult> {
+    return await requestActionFromBackground({
+      type: "mastodon:open-post",
+      accountId: this.accountId,
+      postUrl,
+    });
   }
 }
 

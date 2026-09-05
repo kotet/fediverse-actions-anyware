@@ -1,6 +1,7 @@
 import { buildActionButtons, createHomeAccount } from "../app";
 import { ReplaceUnderlineButtonRenderMode } from "../button-render-modes";
 import {
+  type HomeAccountConfig,
   getActiveAccount,
   loadAccountStore,
   onAccountStoreChanged,
@@ -11,8 +12,9 @@ import { MastodonPageAdapter } from "../page-adapters";
 /**
  * Content script orchestration.
  *
- * Wires up the design flow of "get active account → check auth → extract posts
- * via page adapter → render via button render mode".
+ * Wires up the design flow of "skip pages of a logged-in home account → get
+ * active account → check auth → extract posts via page adapter → render via
+ * button render mode".
  *
  * The adapter is fixed to Mastodon and the render mode to "replace-underline" for
  * now. In the future, the adapter will be selected by page URL and the render mode
@@ -47,6 +49,33 @@ function logStatusChange(message: string): void {
   console.log(message);
 }
 
+/**
+ * Determines whether the current page is served by a home instance the user is
+ * already logged in to.
+ *
+ * On such a page the client's own action buttons already act as that account, so
+ * substituting them would replace working buttons with ones that take the long
+ * way round — resolving the post through the search API before acting on it — and
+ * would act as the active account even when that is a different one. Nothing is
+ * gained, so the extension stays out of the way entirely.
+ *
+ * An account that is not logged in is ignored: with no session on that instance
+ * the client's buttons cannot act either, so its pages are no different from any
+ * other target instance's.
+ */
+async function isPageOfLoggedInHomeAccount(
+  accounts: readonly HomeAccountConfig[],
+): Promise<boolean> {
+  for (const config of accounts) {
+    const account = createHomeAccount(config);
+    // Ownership is decided locally, so the auth state — which costs a round trip
+    // to the background script — is only asked about accounts claiming the page.
+    if (!account.ownsUrl(location.href)) continue;
+    if ((await account.getAuthState()) === "authenticated") return true;
+  }
+  return false;
+}
+
 const pageObserver = new MutationObserver(() => {
   if (rerenderTimer !== undefined) clearTimeout(rerenderTimer);
   rerenderTimer = setTimeout(() => {
@@ -64,8 +93,9 @@ async function renderActionButtons(): Promise<void> {
     return;
   }
 
-  // The replace-underline mode works by substituting the host's own buttons, which
-  // only adapters that know how to do it safely on their target client can offer.
+  // The replace-underline mode works by substituting the host's own action
+  // buttons, which only adapters that know how to do it safely on their target
+  // client can offer.
   if (!supportsActionButtonReplacement(pageAdapter)) {
     logStatusChange(
       "[content] This site does not support the replace-underline mode. Not displaying buttons.",
@@ -74,6 +104,17 @@ async function renderActionButtons(): Promise<void> {
   }
 
   const store = await loadAccountStore();
+
+  // Decided over every registered account rather than the active one, since the
+  // page belonging to any logged-in account is enough to make the client's own
+  // buttons the better ones to leave in place.
+  if (await isPageOfLoggedInHomeAccount(store.accounts)) {
+    logStatusChange(
+      "[content] This page belongs to a logged-in home account. Not displaying buttons.",
+    );
+    return;
+  }
+
   const activeConfig = getActiveAccount(store);
   if (activeConfig === null) {
     logStatusChange("[content] No active home account. Not displaying buttons.");

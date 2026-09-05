@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 import { ReplaceUnderlineButtonRenderMode } from "../src/button-render-modes";
 import type {
   ActionButtonReplacer,
@@ -9,7 +9,7 @@ import type {
 } from "../src/core";
 
 /**
- * Stands in for a page adapter's substitution capability.
+ * Stands in for a page adapter's button replacement capability.
  *
  * Returns plain buttons instead of clones of real markup, which keeps this suite
  * free of any host page fixture — site-specific behavior is covered by the adapter's
@@ -18,19 +18,21 @@ import type {
 class FakeActionButtonReplacer implements ActionButtonReplacer {
   readonly replacedKinds: ButtonKind[] = [];
   restoreCallCount = 0;
-  private readonly missingKinds: ReadonlySet<ButtonKind>;
 
-  constructor(missingKinds: readonly ButtonKind[] = []) {
+  /** Kinds this replacer reports it has no host button for, as a real adapter does per post. */
+  private readonly missingKinds: ReadonlySet<string>;
+
+  constructor(missingKinds: readonly PostActionKind[] = []) {
     this.missingKinds = new Set(missingKinds);
   }
 
   replaceActionButton(post: ExtractedPost, kind: ButtonKind): HTMLElement | null {
     if (this.missingKinds.has(kind)) return null;
     this.replacedKinds.push(kind);
-    const substitute = document.createElement("button");
-    substitute.type = "button";
-    post.insertionTarget.append(substitute);
-    return substitute;
+    const button = document.createElement("button");
+    button.type = "button";
+    post.insertionTarget.append(button);
+    return button;
   }
 
   restoreActionButtons(post: ExtractedPost): void {
@@ -40,10 +42,10 @@ class FakeActionButtonReplacer implements ActionButtonReplacer {
 }
 
 const ACTION_KINDS: readonly PostActionKind[] = [
+  "reply",
   "favourite",
   "boost",
   "bookmark",
-  "open-home",
 ];
 
 function createPost(): ExtractedPost {
@@ -56,11 +58,22 @@ function createPost(): ExtractedPost {
   };
 }
 
-function createActions(): ActionButtonSpec[] {
-  return ACTION_KINDS.map((kind) => ({ kind, label: kind, onClick: vi.fn() }));
+/** An action button spec whose handler records the calls made to it. */
+type SpiedAction = ActionButtonSpec & { readonly onClick: Mock<() => void> };
+
+function createActions(): SpiedAction[] {
+  return ACTION_KINDS.map((kind) => ({
+    kind,
+    label: kind,
+    onClick: vi.fn<() => void>(),
+  }));
 }
 
-function substitutesIn(post: ExtractedPost): HTMLButtonElement[] {
+function clickCounts(actions: readonly SpiedAction[]): number[] {
+  return actions.map((action) => action.onClick.mock.calls.length);
+}
+
+function buttonsIn(post: ExtractedPost): HTMLButtonElement[] {
   return Array.from(post.insertionTarget.querySelectorAll("button"));
 }
 
@@ -81,22 +94,17 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
     );
   });
 
-  it("元ボタンのあるアクションすべてを置き換える", () => {
+  it("アクションすべてを元ボタンの置き換えで描画する", () => {
     const replacer = new FakeActionButtonReplacer();
     new ReplaceUnderlineButtonRenderMode(replacer).render(createPost(), createActions());
-    expect(replacer.replacedKinds).toEqual(["favourite", "boost", "bookmark"]);
+    expect(replacer.replacedKinds).toEqual(["reply", "favourite", "boost", "bookmark"]);
   });
 
-  it("open-home は対応する元ボタンがないため置き換えない", () => {
-    const replacer = new FakeActionButtonReplacer();
-    new ReplaceUnderlineButtonRenderMode(replacer).render(createPost(), createActions());
-    expect(replacer.replacedKinds).not.toContain("open-home");
-  });
-
-  it("置き換えられない種別は読み飛ばす", () => {
+  it("元ボタンのない種別は読み飛ばす", () => {
     const replacer = new FakeActionButtonReplacer(["bookmark"]);
-    new ReplaceUnderlineButtonRenderMode(replacer).render(createPost(), createActions());
-    expect(replacer.replacedKinds).toEqual(["favourite", "boost"]);
+    const post = createPost();
+    new ReplaceUnderlineButtonRenderMode(replacer).render(post, createActions());
+    expect(buttonsIn(post)).toHaveLength(ACTION_KINDS.length - 1);
   });
 
   it("描画のたびに先に元の状態へ戻す", () => {
@@ -106,17 +114,17 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
     renderMode.render(post, createActions());
     renderMode.render(post, createActions());
     expect(replacer.restoreCallCount).toBe(2);
-    expect(substitutesIn(post)).toHaveLength(3);
+    expect(buttonsIn(post)).toHaveLength(ACTION_KINDS.length);
   });
 
-  it("置き換えたボタンに下線用のクラスを付ける", () => {
+  it("描画したボタンすべてに下線用のクラスを付ける", () => {
     const post = createPost();
     new ReplaceUnderlineButtonRenderMode(new FakeActionButtonReplacer()).render(
       post,
       createActions(),
     );
-    for (const substitute of substitutesIn(post)) {
-      expect(substitute.classList).toContain("faa-button");
+    for (const button of buttonsIn(post)) {
+      expect(button.classList).toContain("faa-button");
     }
   });
 
@@ -126,21 +134,28 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
       post,
       createActions(),
     );
-    const substitute = substitutesIn(post)[0];
-    expect(substitute?.title).toBe("actionButtonHomeAccountTitle:favourite");
-    expect(substitute?.getAttribute("aria-label")).toBe(
-      "actionButtonHomeAccountTitle:favourite",
+    const button = buttonsIn(post)[0];
+    expect(button?.title).toBe("actionButtonHomeAccountTitle:reply");
+    expect(button?.getAttribute("aria-label")).toBe(
+      "actionButtonHomeAccountTitle:reply",
     );
   });
 
-  it("クリックすると対応するアクションを1回だけ実行する", () => {
-    const post = createPost();
-    const actions = createActions();
-    new ReplaceUnderlineButtonRenderMode(new FakeActionButtonReplacer()).render(post, actions);
-    substitutesIn(post)[0]?.click();
-    expect(actions[0]?.onClick).toHaveBeenCalledTimes(1);
-    expect(actions[1]?.onClick).not.toHaveBeenCalled();
-  });
+  it.each(ACTION_KINDS.map((kind, index) => [kind, index] as const))(
+    "%s ボタンをクリックすると対応するアクションを1回だけ実行する",
+    (_kind, index) => {
+      const post = createPost();
+      const actions = createActions();
+      new ReplaceUnderlineButtonRenderMode(new FakeActionButtonReplacer()).render(
+        post,
+        actions,
+      );
+      buttonsIn(post)[index]?.click();
+      expect(clickCounts(actions)).toEqual(
+        ACTION_KINDS.map((_, other) => (other === index ? 1 : 0)),
+      );
+    },
+  );
 
   it.each(["mousedown", "mouseup", "click"])(
     "%s イベントを祖先へ伝播させない",
@@ -152,7 +167,7 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
         post,
         createActions(),
       );
-      substitutesIn(post)[0]?.dispatchEvent(new MouseEvent(eventType, { bubbles: true }));
+      buttonsIn(post)[0]?.dispatchEvent(new MouseEvent(eventType, { bubbles: true }));
       expect(ancestorListener).not.toHaveBeenCalled();
       document.body.removeEventListener(eventType, ancestorListener);
     },
@@ -165,7 +180,7 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
     const renderMode = new ReplaceUnderlineButtonRenderMode(new FakeActionButtonReplacer());
     renderMode.render(post, staleActions);
     renderMode.render(post, freshActions);
-    substitutesIn(post)[0]?.click();
+    buttonsIn(post)[0]?.click();
     expect(freshActions[0]?.onClick).toHaveBeenCalledTimes(1);
     expect(staleActions[0]?.onClick).not.toHaveBeenCalled();
   });

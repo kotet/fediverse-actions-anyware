@@ -10,7 +10,7 @@ export interface MockHomeAccountOptions {
   /** Initial authentication state. Defaults to `"authenticated"`. */
   authState?: AuthState;
   /**
-   * Whether `performAction` returns a failure. Defaults to `false` (returns success).
+   * Whether action execution returns a failure. Defaults to `false` (returns success).
    */
   failActions?: boolean;
 }
@@ -32,6 +32,13 @@ export class MockHomeAccount implements HomeAccount {
 
   async getAuthState(): Promise<AuthState> {
     return this.authState;
+  }
+
+  ownsUrl(_url: string): boolean {
+    // Owns nothing, so that a mock account never suppresses the extension on the
+    // page being used to debug it. There is no instance behind it that a page
+    // could belong to.
+    return false;
   }
 
   async authenticate(): Promise<void> {
@@ -58,9 +65,16 @@ export class MockHomeAccount implements HomeAccount {
     return { ok: true };
   }
 
-  async resolvePost(postUrl: string): Promise<string> {
-    console.log(`[mock] resolvePost: ${postUrl}`);
-    // Does not resolve the post; returns the given URL as-is.
-    return postUrl;
+  async openPost(postUrl: string): Promise<ActionResult> {
+    // Neither resolves the post nor opens a tab, so that a mock account stays
+    // usable on any page without a home instance behind it.
+    console.log(`[mock] openPost: ${postUrl}`);
+    if (this.failActions) {
+      return {
+        ok: false,
+        error: { kind: "failed", message: "[mock] open post failed" },
+      };
+    }
+    return { ok: true };
   }
 }

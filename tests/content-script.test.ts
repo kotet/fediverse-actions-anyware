@@ -1,29 +1,9 @@
-import { readFileSync } from "fs";
-import { resolve } from "path";
 import { beforeAll, describe, expect, it, vi } from "vitest";
-
-/**
- * Server-delivered markup of a Mastodon status page.
- *
- * Verified against the live site: the response carries the app shell and nothing
- * else — no action bar, and an `initial-state` payload with no status in it. The
- * client has to fetch the status before any post markup exists, which is always
- * after the content script runs.
- */
-const APP_SHELL = `<div class="notranslate app-holder" id="mastodon"></div>`;
-
-/** The same page once the client has fetched the status and rendered it. */
-const renderedStatusPage = readFileSync(
-  resolve(import.meta.dirname, "fixtures/mastodon-status-page.html"),
-  "utf8",
-)
-  // The fixture is a live capture; its resource tags only produce loader noise here.
-  .replace(/<script[\s\S]*?<\/script>/g, "")
-  .replace(/<link\b[^>]*>/g, "");
+import { APP_SHELL, renderedStatusPage } from "./fixtures/status-page-markup";
 
 const RENDER_SETTLE_MS = 600;
 
-function substitutedKinds(): string[] {
+function placedKinds(): string[] {
   return [...document.querySelectorAll("[data-faa-action]")].map(
     (element) => element.getAttribute("data-faa-action") ?? "",
   );
@@ -60,30 +40,30 @@ describe("コンテンツスクリプトの自動再描画", () => {
   });
 
   it("投稿が描画される前は何も挿入しない", () => {
-    expect(substitutedKinds()).toEqual([]);
+    expect(placedKinds()).toEqual([]);
   });
 
   it("後から投稿が描画されるとボタンを挿入する", async () => {
     document.body.innerHTML = APP_SHELL + renderedStatusPage;
     await wait(RENDER_SETTLE_MS);
-    expect(new Set(substitutedKinds())).toEqual(
-      new Set(["favourite", "boost", "bookmark"]),
+    expect(new Set(placedKinds())).toEqual(
+      new Set(["reply", "favourite", "boost", "bookmark"]),
     );
   });
 
   it("自身の挿入で再描画が繰り返されない", async () => {
-    const before = substitutedKinds().length;
+    const before = placedKinds().length;
     await wait(RENDER_SETTLE_MS);
-    expect(substitutedKinds()).toHaveLength(before);
+    expect(placedKinds()).toHaveLength(before);
   });
 
   it("ホスト側がボタンを描画し直しても挿入し直す", async () => {
     document.body.innerHTML = APP_SHELL;
     await wait(RENDER_SETTLE_MS);
-    expect(substitutedKinds()).toEqual([]);
+    expect(placedKinds()).toEqual([]);
 
     document.body.innerHTML = APP_SHELL + renderedStatusPage;
     await wait(RENDER_SETTLE_MS);
-    expect(substitutedKinds().length).toBeGreaterThan(0);
+    expect(placedKinds().length).toBeGreaterThan(0);
   });
 });

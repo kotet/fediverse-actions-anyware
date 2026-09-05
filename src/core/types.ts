@@ -15,23 +15,19 @@ export type AuthState =
 /**
  * Kinds of actions that can be executed on a post.
  *
- * `open-home` represents "open the post on the active account's home instance"
- * and differs from others in that it involves post resolution (URL resolution)
- * rather than an API call.
+ * `reply` is carried out by resolving the post onto the active account's home
+ * instance and opening it there, rather than by an API call, because writing a
+ * reply needs a composer this extension does not provide. Landing on the post
+ * under the user's own account is also what "open it on my instance" means, so
+ * no separate action is offered for that.
  */
-export type PostActionKind =
-  | "favourite"
-  | "boost"
-  | "bookmark"
-  | "reply"
-  | "open-home";
+export type PostActionKind = "favourite" | "boost" | "bookmark" | "reply";
 
 /**
- * Kinds of actions that involve an API call to the home instance,
- * such as favourite, boost, bookmark, and reply.
- * {@link PostActionKind} excluding `open-home`.
+ * Kinds of actions that are carried out by an API call to the home instance.
+ * {@link PostActionKind} excluding the one that opens the post instead.
  */
-export type ApiActionKind = Exclude<PostActionKind, "open-home">;
+export type ApiActionKind = Exclude<PostActionKind, "reply">;
 
 /** Button render mode. Switched by user settings. */
 export type ButtonRenderModeKind =
@@ -65,9 +61,20 @@ export interface ExtractedPost {
   readonly insertionTarget: HTMLElement;
 }
 
-/** Result of an API action execution. */
+/** Result of an action execution. */
 export type ActionResult =
   | { readonly ok: true }
+  | { readonly ok: false; readonly error: ActionError };
+
+/**
+ * Result of resolving a post onto the home instance.
+ *
+ * Distinct from {@link ActionResult} because success carries the resolved URL.
+ * Kept to plain JSON values, since a resolution runs in the background script and
+ * its result crosses a `runtime.sendMessage` boundary.
+ */
+export type ResolveResult =
+  | { readonly ok: true; readonly url: string }
   | { readonly ok: false; readonly error: ActionError };
 
 /** Error kinds that can occur during action execution or post resolution. Corresponds to the error display in spec 3.8. */

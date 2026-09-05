@@ -80,7 +80,7 @@ describe("MastodonPageAdapter", () => {
       expect(buttons?.more?.querySelector("svg")?.classList).toContain("icon-ellipsis-h");
     });
 
-    it("拡張が挿入したボタンを既存ボタンとして扱わない", () => {
+    it("拡張が置き換えたボタンを既存ボタンとして扱わない", () => {
       const adapter = new MastodonPageAdapter();
       const post = adapter.extractPosts()[0];
       const original = post?.existingButtons.favourite;
@@ -143,7 +143,7 @@ describe("MastodonPageAdapter", () => {
       document.body.innerHTML = statusPageFixture;
     });
 
-    it("挿入した要素を取り除き元ボタンを再表示する", () => {
+    it("置き換えた要素を取り除き元ボタンを再表示する", () => {
       const adapter = new MastodonPageAdapter();
       const post = adapter.extractPosts()[0];
       const original = post?.existingButtons.favourite;

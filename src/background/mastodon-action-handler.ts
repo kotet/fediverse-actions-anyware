@@ -22,6 +22,41 @@ async function findMastodonInstance(accountId: string): Promise<string | null> {
   return config.mastodonInstance ?? null;
 }
 
+/** Failure returned for a request naming an account this script cannot act for. */
+function unknownAccountFailure(accountId: string): ActionResult {
+  return {
+    ok: false,
+    error: {
+      kind: "failed",
+      message: `No Mastodon account is registered as ${accountId}.`,
+    },
+  };
+}
+
+/**
+ * Opens `url` in a new tab.
+ *
+ * Done here rather than in the requesting realm because a content script has no
+ * `tabs` API, and `window.open` after awaiting the post resolution would have lost
+ * the click's transient activation and be treated as an unsolicited popup.
+ */
+async function openInNewTab(url: string): Promise<ActionResult> {
+  try {
+    await browser.tabs.create({ url });
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      error: {
+        kind: "failed",
+        message: `Could not open a tab: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      },
+    };
+  }
+}
+
 /**
  * Runs a home account operation on behalf of another realm.
  *
@@ -30,22 +65,14 @@ async function findMastodonInstance(accountId: string): Promise<string | null> {
  */
 export async function handleMastodonActionRequest(
   request: MastodonActionRequest,
-): Promise<AuthState | ActionResult | string> {
+): Promise<AuthState | ActionResult> {
   switch (request.type) {
     case "mastodon:get-auth-state":
       return await getMastodonAuthState(request.accountId);
 
     case "mastodon:perform-action": {
       const instance = await findMastodonInstance(request.accountId);
-      if (instance === null) {
-        return {
-          ok: false,
-          error: {
-            kind: "failed",
-            message: `No Mastodon account is registered as ${request.accountId}.`,
-          },
-        };
-      }
+      if (instance === null) return unknownAccountFailure(request.accountId);
       return await performMastodonAction(
         instance,
         request.accountId,
@@ -54,15 +81,16 @@ export async function handleMastodonActionRequest(
       );
     }
 
-    case "mastodon:resolve-post": {
+    case "mastodon:open-post": {
       const instance = await findMastodonInstance(request.accountId);
-      // Matches how resolution failures are reported elsewhere: the original URL.
-      if (instance === null) return request.postUrl;
-      return await resolveMastodonPost(
+      if (instance === null) return unknownAccountFailure(request.accountId);
+      const resolved = await resolveMastodonPost(
         instance,
         request.accountId,
         request.postUrl,
       );
+      if (!resolved.ok) return { ok: false, error: resolved.error };
+      return await openInNewTab(resolved.url);
     }
   }
 }

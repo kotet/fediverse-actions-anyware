@@ -10,15 +10,16 @@ const ICON_CLASS_TO_BUTTON_KIND: ReadonlyMap<string, ButtonKind> = new Map([
 ]);
 
 /**
- * Attribute marking a button this extension inserted. The value is the button kind.
+ * Attribute marking an element this extension added to an action bar.
+ * The value is the action kind the element serves.
  *
- * Written by {@link MastodonPageAdapter.replaceActionButton} and read back by
+ * Written by {@link MastodonPageAdapter.replaceActionButton}, read back by
  * {@link collectButtonsByKind} and {@link MastodonPageAdapter.restoreActionButtons},
  * so both sides of the contract stay inside this module.
  */
 const EXTENSION_BUTTON_ATTRIBUTE = "data-faa-action";
 
-/** Attributes Mastodon uses to disable a button, which a usable substitute must not carry. */
+/** Attributes Mastodon uses to disable a button, which a usable copy must not carry. */
 const DISABLING_ATTRIBUTES: readonly string[] = ["disabled", "aria-disabled"];
 
 /** Class Mastodon adds to a button it has disabled, e.g. bookmark for anonymous viewers. */
@@ -30,8 +31,8 @@ function collectButtonsByKind(
   const result: Partial<Record<ButtonKind, HTMLElement>> = {};
   for (const button of actionBar.querySelectorAll("button")) {
     if (!(button instanceof HTMLElement)) continue;
-    // Substitutes inserted by this extension keep the host's icon markup, so they
-    // would otherwise be picked up here and shadow the real host button.
+    // Buttons this extension added keep the host's markup, so they would otherwise
+    // be picked up here and shadow the real host button.
     if (button.hasAttribute(EXTENSION_BUTTON_ATTRIBUTE)) continue;
     const svg = button.querySelector("svg");
     if (!svg) continue;
@@ -46,16 +47,32 @@ function collectButtonsByKind(
   return result;
 }
 
+/** Strips the host's disabled state and identity from a copied button. */
+function neutralizeHostButton(button: HTMLElement): void {
+  // Mastodon disables buttons that an anonymous viewer cannot use, via both the
+  // attribute and a class. The copy acts through the home account instead, so
+  // every trace of that disabled state has to go.
+  for (const attribute of DISABLING_ATTRIBUTES) {
+    button.removeAttribute(attribute);
+  }
+  button.classList.remove(DISABLED_CLASS);
+  if (button instanceof HTMLButtonElement) {
+    button.disabled = false;
+  }
+  // The copy would otherwise duplicate the host's id.
+  button.removeAttribute("id");
+}
+
 /**
  * Page adapter for the standard Mastodon web client.
  *
  * Targets individual status pages (e.g. `/@user/123`) which display
  * one detailed status followed by thread replies.
  *
- * Supports action button substitution: Mastodon's buttons carry their icon as
- * inline SVG, so cloning one reproduces the host's appearance exactly. The host
- * element is only hidden, never removed, because Mastodon's React tree keeps a
- * reference to it and would fail on a later re-render.
+ * Supports action button replacement: Mastodon's buttons carry their icon as
+ * inline SVG, so cloning one reproduces the host's appearance exactly. A host
+ * element being substituted is only hidden, never removed, because Mastodon's
+ * React tree keeps a reference to it and would fail on a later re-render.
  */
 export class MastodonPageAdapter implements PageAdapter, ActionButtonReplacer {
   isSupportedPage(): boolean {
@@ -106,18 +123,7 @@ export class MastodonPageAdapter implements PageAdapter, ActionButtonReplacer {
     const substitute = original.cloneNode(true);
     if (!(substitute instanceof HTMLElement)) return null;
 
-    // Mastodon disables buttons that an anonymous viewer cannot use, via both the
-    // attribute and a class. The substitute acts through the home account instead,
-    // so every trace of that disabled state has to go.
-    for (const attribute of DISABLING_ATTRIBUTES) {
-      substitute.removeAttribute(attribute);
-    }
-    substitute.classList.remove(DISABLED_CLASS);
-    if (substitute instanceof HTMLButtonElement) {
-      substitute.disabled = false;
-    }
-    // The clone would otherwise duplicate the host's id.
-    substitute.removeAttribute("id");
+    neutralizeHostButton(substitute);
     substitute.setAttribute(EXTENSION_BUTTON_ATTRIBUTE, kind);
 
     // Inserting before the original keeps the host button last in DOM order, which

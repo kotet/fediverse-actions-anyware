@@ -1,18 +1,14 @@
 import type {
   ActionButtonSpec,
+  ActionResult,
   ApiActionKind,
   ExtractedPost,
   HomeAccount,
+  PostActionKind,
 } from "../core";
 import { getMessage, type MessageKey } from "../i18n";
 
-/**
- * API action kinds offered to the user, with the message key for their label.
- *
- * `reply` is intentionally absent: `HomeAccount.performAction` has no reply
- * implementation yet, so offering the action would only produce a button that
- * silently fails. It is added back once composing a reply is supported.
- */
+/** API action kinds offered to the user, with the message key for their label. */
 const API_ACTION_LABEL_KEYS: ReadonlyArray<{
   kind: ApiActionKind;
   labelKey: MessageKey;
@@ -21,6 +17,19 @@ const API_ACTION_LABEL_KEYS: ReadonlyArray<{
   { kind: "boost", labelKey: "actionLabelBoost" },
   { kind: "bookmark", labelKey: "actionLabelBookmark" },
 ];
+
+/**
+ * Reports a failed action.
+ *
+ * Only reaches the console for now. Stage 2 of the release plan turns this into a
+ * notification the user can see, which is what the error kinds exist for.
+ */
+function reportActionResult(kind: PostActionKind, result: ActionResult): void {
+  if (result.ok) return;
+  console.error(
+    `[content] Action failed: ${kind} (${result.error.kind}) ${result.error.message}`,
+  );
+}
 
 /**
  * Builds action button specs from the active account and post to pass to the render mode.
@@ -40,24 +49,20 @@ export function buildActionButtons(
       kind,
       label: getMessage(labelKey),
       onClick: async () => {
-        const result = await account.performAction(kind, post.postUrl);
-        if (!result.ok) {
-          console.error(
-            `[content] Action failed: ${kind} (${result.error.kind}) ${result.error.message}`,
-          );
-        }
+        reportActionResult(kind, await account.performAction(kind, post.postUrl));
       },
     }),
   );
 
-  const openHomeButton: ActionButtonSpec = {
-    kind: "open-home",
-    label: getMessage("actionLabelOpenHome"),
+  // Replying takes the user to the post on their own instance instead of calling
+  // an API, because writing a reply needs a composer this extension does not have.
+  const replyButton: ActionButtonSpec = {
+    kind: "reply",
+    label: getMessage("actionLabelReply"),
     onClick: async () => {
-      const resolvedUrl = await account.resolvePost(post.postUrl);
-      console.log(`[content] Open in home instance: ${resolvedUrl}`);
+      reportActionResult("reply", await account.openPost(post.postUrl));
     },
   };
 
-  return [...apiButtons, openHomeButton];
+  return [...apiButtons, replyButton];
 }

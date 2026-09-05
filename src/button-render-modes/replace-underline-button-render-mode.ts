@@ -42,24 +42,22 @@ export class ReplaceUnderlineButtonRenderMode implements ButtonRenderMode {
   }
 
   render(post: ExtractedPost, actions: readonly ActionButtonSpec[]): void {
-    // Rebuild rather than skip: a substitute left over from an earlier render still
+    // Rebuild rather than skip: a button left over from an earlier render still
     // holds a click handler bound to the account that was active back then.
     this.replacer.restoreActionButtons(post);
 
     for (const action of actions) {
-      const kind = action.kind;
-      // `open-home` has no counterpart button on the host page, so there is nothing
-      // to substitute for it.
-      if (kind === "open-home") continue;
-
-      const button = this.replacer.replaceActionButton(post, kind);
+      // Every offered action has a host button standing for it, so a missing one
+      // means this post does not carry that action at all and it is left out.
+      const button = this.replacer.replaceActionButton(post, action.kind);
       if (button === null) continue;
 
       button.classList.add(UNDERLINE_BUTTON_CLASS);
 
-      // The substitute inherits the host's label, which claims the action happens on
-      // the target instance. Say where it actually runs, so the change is conveyed to
-      // assistive technology too and not by the underline alone.
+      // The button is copied from a host one and inherits its label, which claims
+      // the action happens on the target instance. Say where it actually runs, so
+      // the change is conveyed to assistive technology too and not by the underline
+      // alone.
       const description = getMessage("actionButtonHomeAccountTitle", action.label);
       button.title = description;
       button.setAttribute("aria-label", description);

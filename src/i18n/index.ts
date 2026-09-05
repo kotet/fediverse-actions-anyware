@@ -29,10 +29,10 @@ const MESSAGE_KEYS = [
   "mastodonOAuthStarted",
   "mastodonOAuthError",
   "mockAccountLabel",
+  "actionLabelReply",
   "actionLabelFavourite",
   "actionLabelBoost",
   "actionLabelBookmark",
-  "actionLabelOpenHome",
   "actionButtonHomeAccountTitle",
 ] as const;
 

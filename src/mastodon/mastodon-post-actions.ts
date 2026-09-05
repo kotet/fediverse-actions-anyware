@@ -1,10 +1,16 @@
-import type { ActionResult, ApiActionKind, AuthState } from "../core/types";
+import type {
+  ActionResult,
+  ApiActionKind,
+  AuthState,
+  ResolveResult,
+} from "../core/types";
 import { loadMastodonCredentials } from "./mastodon-credentials";
 import {
   bookmarkStatus,
   boostStatus,
   favouriteStatus,
   searchStatus,
+  toActionError,
 } from "./mastodon-api-client";
 
 /**
@@ -17,6 +23,18 @@ import {
  * Reading the stored credentials is part of each operation, which keeps the
  * access token inside the background script.
  */
+
+/** Error returned before any request when the account has no access token. */
+const UNAUTHENTICATED_ERROR = {
+  kind: "unauthenticated",
+  message: "Not authenticated",
+} as const;
+
+/** Error returned when the home instance does not know the post. */
+const NOT_FOUND_ERROR = {
+  kind: "not-found",
+  message: "Post not found",
+} as const;
 
 /** Reports whether an access token is stored for the account. Performs no network access. */
 export async function getMastodonAuthState(
@@ -43,10 +61,7 @@ export async function performMastodonAction(
 ): Promise<ActionResult> {
   const credentials = await loadMastodonCredentials(accountId);
   if (!credentials?.accessToken) {
-    return {
-      ok: false,
-      error: { kind: "unauthenticated", message: "Not authenticated" },
-    };
+    return { ok: false, error: UNAUTHENTICATED_ERROR };
   }
 
   try {
@@ -56,10 +71,7 @@ export async function performMastodonAction(
       postUrl,
     );
     if (!status) {
-      return {
-        ok: false,
-        error: { kind: "not-found", message: "Post not found" },
-      };
+      return { ok: false, error: NOT_FOUND_ERROR };
     }
 
     switch (action) {
@@ -72,38 +84,29 @@ export async function performMastodonAction(
       case "bookmark":
         await bookmarkStatus(instance, credentials.accessToken, status.id);
         break;
-      case "reply":
-        return {
-          ok: false,
-          error: { kind: "failed", message: "Reply is not implemented" },
-        };
     }
     return { ok: true };
   } catch (error) {
-    return {
-      ok: false,
-      error: {
-        kind: "failed",
-        message: error instanceof Error ? error.message : "Unknown error",
-      },
-    };
+    return { ok: false, error: toActionError(error) };
   }
 }
 
 /**
  * Resolves a remote post URL to its URL on the home instance.
  *
- * Returns `postUrl` unchanged when the account is unauthenticated, the post is
- * not found, or the request fails, so the caller cannot tell those apart. Stage 1
- * of the release plan replaces this with a result type.
+ * Never throws: a post that cannot be resolved is reported as an error rather
+ * than by handing back the original URL, which would take the user to the target
+ * instance while claiming to open the post on their own.
  */
 export async function resolveMastodonPost(
   instance: string,
   accountId: string,
   postUrl: string,
-): Promise<string> {
+): Promise<ResolveResult> {
   const credentials = await loadMastodonCredentials(accountId);
-  if (!credentials?.accessToken) return postUrl;
+  if (!credentials?.accessToken) {
+    return { ok: false, error: UNAUTHENTICATED_ERROR };
+  }
 
   try {
     const status = await searchStatus(
@@ -111,9 +114,14 @@ export async function resolveMastodonPost(
       credentials.accessToken,
       postUrl,
     );
-    if (!status) return postUrl;
-    return `https://${instance}/@${status.account.acct}/${status.id}`;
-  } catch {
-    return postUrl;
+    if (!status) {
+      return { ok: false, error: NOT_FOUND_ERROR };
+    }
+    return {
+      ok: true,
+      url: `https://${instance}/@${status.account.acct}/${status.id}`,
+    };
+  } catch (error) {
+    return { ok: false, error: toActionError(error) };
   }
 }
