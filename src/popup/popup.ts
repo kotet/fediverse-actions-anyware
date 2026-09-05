@@ -1,5 +1,5 @@
 import { loadAccountStore } from "../core";
-import { getMessage, type MessageKey } from "../i18n";
+import { localizeHtml } from "../i18n";
 import { renderAccountList } from "./account-list-view";
 import { setupAddAccountView } from "./add-account-view";
 
@@ -12,14 +12,6 @@ function showView(view: ViewName): void {
   const addView = document.getElementById("view-add") as HTMLElement;
   listView.classList.toggle("hidden", view !== "list");
   addView.classList.toggle("hidden", view !== "add");
-}
-
-/** Replaces text content of elements that have a data-i18n attribute. */
-function localizeHtml(): void {
-  for (const el of document.querySelectorAll("[data-i18n]")) {
-    const key = el.getAttribute("data-i18n") as MessageKey;
-    el.textContent = getMessage(key);
-  }
 }
 
 document.addEventListener("DOMContentLoaded", () => {

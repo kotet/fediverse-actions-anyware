@@ -8,6 +8,7 @@ import {
   exchangeAuthCode,
   verifyCredentials,
 } from "../mastodon/mastodon-api-client";
+import { getMessage, localizeHtml } from "../i18n";
 
 const statusEl = document.getElementById("status")!;
 
@@ -22,7 +23,9 @@ function showStatus(
 async function completeOAuth(code: string): Promise<void> {
   const pending = await loadPendingOAuth();
   if (!pending) {
-    throw new Error("Authentication state not found. Please try again.");
+    // Thrown with the text the page will show, since `main` reports whatever
+    // reaches it as the reason the authentication did not finish.
+    throw new Error(getMessage("oauthCallbackStateMissing"));
   }
 
   const accessToken = await exchangeAuthCode(
@@ -60,24 +63,30 @@ async function main(): Promise<void> {
   const code = params.get("code");
 
   if (error) {
-    showStatus(`Authentication denied: ${error}`, "error");
+    showStatus(getMessage("oauthCallbackDenied", error), "error");
     return;
   }
 
   if (!code) {
-    showStatus("Authentication code not found.", "error");
+    showStatus(getMessage("oauthCallbackCodeMissing"), "error");
     return;
   }
 
   try {
     await completeOAuth(code);
-    showStatus("Account successfully added.", "success");
+    showStatus(getMessage("oauthCallbackSucceeded"), "success");
   } catch (err) {
-    showStatus(
-      `An error occurred: ${err instanceof Error ? err.message : "Unknown error"}`,
-      "error",
-    );
+    // The reason comes from the instance or from `MastodonApiError`, so it is a
+    // diagnostic string rather than a translated one, and only the sentence
+    // around it is localized.
+    const reason =
+      err instanceof Error ? err.message : getMessage("unknownError");
+    showStatus(getMessage("oauthCallbackFailed", reason), "error");
   }
 }
 
+// The initial "authenticating" text is a message key in the markup, and `main`
+// leaves it on screen for as long as the token exchange takes, so it has to be
+// resolved into the active locale's text first.
+localizeHtml();
 void main();

@@ -23,6 +23,9 @@
   "popupSoftwareMockOption": {
     "message": "モック"
   },
+  "popupSoftwareMastodonOption": {
+    "message": "Mastodon"
+  },
   "popupInstanceLabel": {
     "message": "インスタンス"
   },
@@ -31,6 +34,40 @@
   },
   "popupSubmitButton": {
     "message": "追加"
+  },
+  "oauthCallbackPageTitle": {
+    "message": "Fediverse Actions Anyware - 認証"
+  },
+  "oauthCallbackProcessing": {
+    "message": "認証処理中..."
+  },
+  "oauthCallbackDenied": {
+    "message": "認証が拒否されました: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "oauthCallbackCodeMissing": {
+    "message": "認証コードが見つかりません。"
+  },
+  "oauthCallbackStateMissing": {
+    "message": "認証の途中状態が見つかりません。もう一度お試しください。"
+  },
+  "oauthCallbackSucceeded": {
+    "message": "アカウントを追加しました。"
+  },
+  "oauthCallbackFailed": {
+    "message": "エラーが発生しました: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "unknownError": {
+    "message": "不明なエラー"
   },
   "authStateAuthenticated": {
     "message": "認証済み"
@@ -51,7 +88,12 @@
     "message": "Mastodon の認証ページを開きました。新しいタブで認証を完了してください。"
   },
   "mastodonOAuthError": {
-    "message": "Mastodon の認証開始中にエラーが発生しました。"
+    "message": "Mastodon の認証開始中にエラーが発生しました: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
   },
   "mockAccountLabel": {
     "message": "モックアカウント $COUNT$",

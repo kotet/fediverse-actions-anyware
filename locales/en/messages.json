@@ -7,9 +7,28 @@
   "popupAddAccountHeading": { "message": "Add Account" },
   "popupSoftwareLabel": { "message": "Type" },
   "popupSoftwareMockOption": { "message": "Mock" },
+  "popupSoftwareMastodonOption": { "message": "Mastodon" },
   "popupInstanceLabel": { "message": "Instance" },
   "popupCancelButton": { "message": "Back" },
   "popupSubmitButton": { "message": "Add" },
+  "oauthCallbackPageTitle": { "message": "Fediverse Actions Anyware - Authentication" },
+  "oauthCallbackProcessing": { "message": "Authenticating..." },
+  "oauthCallbackDenied": {
+    "message": "Authentication denied: $REASON$",
+    "placeholders": {
+      "reason": { "content": "$1" }
+    }
+  },
+  "oauthCallbackCodeMissing": { "message": "Authentication code not found." },
+  "oauthCallbackStateMissing": { "message": "Authentication state not found. Please try again." },
+  "oauthCallbackSucceeded": { "message": "Account successfully added." },
+  "oauthCallbackFailed": {
+    "message": "An error occurred: $REASON$",
+    "placeholders": {
+      "reason": { "content": "$1" }
+    }
+  },
+  "unknownError": { "message": "Unknown error" },
   "authStateAuthenticated": { "message": "Authenticated" },
   "authStateUnauthenticated": { "message": "Unauthenticated" },
   "authStateError": { "message": "Error" },
@@ -17,7 +36,12 @@
   "accountRemoveTitle": { "message": "Remove" },
   "mastodonInstanceRequired": { "message": "Please enter the instance URL." },
   "mastodonOAuthStarted": { "message": "Mastodon authorization page opened. Please complete authentication in the new tab." },
-  "mastodonOAuthError": { "message": "An error occurred while starting Mastodon authentication." },
+  "mastodonOAuthError": {
+    "message": "An error occurred while starting Mastodon authentication: $REASON$",
+    "placeholders": {
+      "reason": { "content": "$1" }
+    }
+  },
   "mockAccountLabel": {
     "message": "Mock Account $COUNT$",
     "placeholders": {

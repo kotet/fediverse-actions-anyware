@@ -99,8 +99,12 @@ export function setupAddAccountView(callbacks: AddAccountViewCallbacks): void {
       errorMessage.classList.remove("hidden");
       errorMessage.style.color = "#2a6a2a";
     } catch (err) {
-      errorMessage.textContent =
-        err instanceof Error ? err.message : getMessage("mastodonOAuthError");
+      // Only the sentence is localized: the reason is a diagnostic string from
+      // `MastodonApiError` (the operation that failed and the HTTP status), which
+      // has no translation to show in its place.
+      const reason =
+        err instanceof Error ? err.message : getMessage("unknownError");
+      errorMessage.textContent = getMessage("mastodonOAuthError", reason);
       errorMessage.classList.remove("hidden");
       errorMessage.style.color = "";
     } finally {

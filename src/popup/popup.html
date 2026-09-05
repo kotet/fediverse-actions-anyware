@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Fediverse Actions Anyware</title>
+    <title data-i18n="extensionName"></title>
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
-    <h1>Fediverse Actions Anyware</h1>
+    <h1 data-i18n="extensionName"></h1>
 
     <section id="view-list" class="view">
       <h2 data-i18n="popupHomeAccountsHeading"></h2>
@@ -23,7 +23,7 @@
           <span class="field-label" data-i18n="popupSoftwareLabel"></span>
           <select id="account-software" class="field-input">
             <option value="mock" data-i18n="popupSoftwareMockOption"></option>
-            <option value="mastodon">Mastodon</option>
+            <option value="mastodon" data-i18n="popupSoftwareMastodonOption"></option>
           </select>
         </label>
         <label class="field hidden" id="instance-field">

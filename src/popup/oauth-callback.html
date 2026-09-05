@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Fediverse Actions Anyware - 認証</title>
+    <title data-i18n="oauthCallbackPageTitle"></title>
     <style>
       body {
         font-family: sans-serif;
@@ -20,8 +20,8 @@
 </style>
   </head>
   <body>
-    <h1>Fediverse Actions Anyware</h1>
-    <div id="status" class="status-loading">認証処理中...</div>
+    <h1 data-i18n="extensionName"></h1>
+    <div id="status" class="status-loading" data-i18n="oauthCallbackProcessing"></div>
     <script src="oauth-callback.js"></script>
   </body>
 </html>
