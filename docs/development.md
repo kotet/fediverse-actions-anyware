@@ -114,7 +114,7 @@ await browser.storage.local.set({
 | ボタンが1つも出ない | サーバーが返す HTML はアプリシェルのみで、投稿は API 取得後にクライアントが描画する。`content.ts` はこれをデバウンス付き `MutationObserver` で待つため、監視が動いていないと0件のままになる | コンソールで `[content] Extracted 0 post(s).` が出たまま更新されないか確認する。`[content] Extracted 1 post(s).` に変われば監視は動いている |
 | `This site does not support the replace-underline mode.` が出る | ページアダプターが `ActionButtonReplacer` を実装していない | 使用中のアダプターを確認する。`MockPageAdapter` は意図的に非対応 |
 | `No active home account.` が出る | アクティブアカウントが未選択 | ストレージの `activeAccountId` を設定する（ポップアップからならラジオボタンを選択する） |
-| ボタンは出るがアクションが失敗する | `manifest.json` に host permission がなく、ホームインスタンスへの `fetch` が CORS で弾かれている可能性がある | まずモックアカウントで成功するか確認し、モックで成功して Mastodon で失敗するなら通信側の問題 |
+| ボタンは出るがアクションが失敗する | ホームインスタンスへの通信はバックグラウンドが行う。コンテンツスクリプトから直接 `fetch` すると、ホストページの CSP（`connect-src`）で必ず失敗する（`AGENTS.md` の「ホームインスタンスへの通信はバックグラウンドで行う」） | 失敗しているのが依頼（`runtime.sendMessage`）か通信かを分ける。バックグラウンドまで届いていれば `ActionError` が返り、届かなければ送信側で例外になる |
 | タイムラインで一部の投稿にしかボタンが出ない | Mastodon は画面外の投稿をアンマウントする（仮想化）ため、アクションバー自体が存在しない | 想定どおりの挙動。スクロールしてマウントされた投稿には `MutationObserver` が追従する |
 | 返信を押しても何も起きない | 返信は初版の対象外で、置換していない | 想定どおりの挙動。ホストのボタンがそのまま動作する |
 | ページの表示が崩れる | 元ボタンを削除してしまっている | `replaceActionButton` が元ボタンを `display: none` で隠すだけになっているか確認する。削除すると React の再描画が失敗する |

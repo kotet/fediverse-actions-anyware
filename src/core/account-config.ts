@@ -7,7 +7,7 @@ import type { AuthState } from "./types";
 export type HomeAccountSoftware =
   /** Mock implementation for debugging. */
   | "mock"
-  /** Mastodon implementation (not yet implemented). */
+  /** Mastodon implementation. */
   | "mastodon";
 
 /**

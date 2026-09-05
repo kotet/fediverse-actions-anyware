@@ -6,14 +6,23 @@ import {
   savePendingOAuth,
 } from "./mastodon-credentials";
 import {
-  bookmarkStatus,
-  boostStatus,
   buildAuthorizationUrl,
-  favouriteStatus,
   registerMastodonApp,
-  searchStatus,
 } from "./mastodon-api-client";
+import { sendMastodonActionRequest } from "./mastodon-action-request";
 
+/**
+ * Home account backed by a Mastodon instance.
+ *
+ * Every operation that reaches the home instance is delegated to the background
+ * script: this class is constructed in the content script, where the host page's
+ * `connect-src` directive blocks requests to any other origin. Delegating also
+ * keeps the access token out of the page's process.
+ *
+ * `authenticate()` and `logout()` are the exception. They are driven from the
+ * popup, which is an extension page and can reach the instance directly, and
+ * `authenticate()` needs the `tabs` API that a content script does not have.
+ */
 export class MastodonHomeAccount implements HomeAccount {
   readonly accountId: string;
   readonly instance: string;
@@ -24,9 +33,10 @@ export class MastodonHomeAccount implements HomeAccount {
   }
 
   async getAuthState(): Promise<AuthState> {
-    const credentials = await loadMastodonCredentials(this.accountId);
-    if (!credentials?.accessToken) return "unauthenticated";
-    return "authenticated";
+    return await sendMastodonActionRequest({
+      type: "mastodon:get-auth-state",
+      accountId: this.accountId,
+    });
   }
 
   async authenticate(): Promise<void> {
@@ -70,45 +80,16 @@ export class MastodonHomeAccount implements HomeAccount {
     action: ApiActionKind,
     postUrl: string,
   ): Promise<ActionResult> {
-    const credentials = await loadMastodonCredentials(this.accountId);
-    if (!credentials?.accessToken) {
-      return {
-        ok: false,
-        error: { kind: "unauthenticated", message: "Not authenticated" },
-      };
-    }
-
     try {
-      const status = await searchStatus(
-        this.instance,
-        credentials.accessToken,
+      return await sendMastodonActionRequest({
+        type: "mastodon:perform-action",
+        accountId: this.accountId,
+        action,
         postUrl,
-      );
-      if (!status) {
-        return {
-          ok: false,
-          error: { kind: "not-found", message: "Post not found" },
-        };
-      }
-
-      switch (action) {
-        case "favourite":
-          await favouriteStatus(this.instance, credentials.accessToken, status.id);
-          break;
-        case "boost":
-          await boostStatus(this.instance, credentials.accessToken, status.id);
-          break;
-        case "bookmark":
-          await bookmarkStatus(this.instance, credentials.accessToken, status.id);
-          break;
-        case "reply":
-          return {
-            ok: false,
-            error: { kind: "failed", message: "Reply is not implemented" },
-          };
-      }
-      return { ok: true };
+      });
     } catch (error) {
+      // Reaching the background script can fail while the extension is
+      // reloading or updating. The caller expects a result, not an exception.
       return {
         ok: false,
         error: {
@@ -120,17 +101,12 @@ export class MastodonHomeAccount implements HomeAccount {
   }
 
   async resolvePost(postUrl: string): Promise<string> {
-    const credentials = await loadMastodonCredentials(this.accountId);
-    if (!credentials?.accessToken) return postUrl;
-
     try {
-      const status = await searchStatus(
-        this.instance,
-        credentials.accessToken,
+      return await sendMastodonActionRequest({
+        type: "mastodon:resolve-post",
+        accountId: this.accountId,
         postUrl,
-      );
-      if (!status) return postUrl;
-      return `https://${this.instance}/@${status.account.acct}/${status.id}`;
+      });
     } catch {
       return postUrl;
     }

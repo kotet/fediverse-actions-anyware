@@ -33,6 +33,14 @@ Firefox の操作には **firefox-devtools MCP** を使う。
 
 `evaluate_script` はページの realm で動くため、Mastodon の CSP により `<style>` 要素の注入がブロックされる（`sheet` が生成されない）。スタイルを試す場合は `element.style.setProperty(..., "important")` を使う。コンテンツスクリプトが注入する CSS はページの CSP の対象外。
 
+## ホームインスタンスへの通信はバックグラウンドで行う
+
+コンテンツスクリプトからの `fetch` はホストページの CSP (`connect-src`) の対象になる。Mastodon は自身のオリジンしか許可しないため、他インスタンスへのリクエストは必ず失敗する（`securitypolicyviolation` イベントで実測）。host permission では回避できない。
+
+ホームインスタンスへ出る通信は `src/background/` に置き、他の realm からは `runtime.sendMessage` で依頼する。ポップアップと `oauth-callback.html` は拡張機能ページなので、この制約を受けず直接リクエストできる。
+
+ユニットテストの happy-dom に CSP は無いため、**この誤りはテストでは検出できない。**
+
 ## Firefox MV3 の注意点
 
 Chrome/Edge との仕様差異により、以下を必ず `manifest.json` に含めること。
