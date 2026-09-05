@@ -1,4 +1,9 @@
-import { addAccount } from "../core/account-store";
+import type { HomeAccountConfig } from "../core/account-config";
+import {
+  addAccount,
+  loadAccountStore,
+  updateAccount,
+} from "../core/account-store";
 import {
   clearPendingOAuth,
   loadPendingOAuth,
@@ -47,12 +52,26 @@ async function completeOAuth(code: string): Promise<void> {
     accessToken,
   });
 
-  await addAccount({
+  const config: HomeAccountConfig = {
     id: pending.accountId,
     software: "mastodon",
     label,
     mastodonInstance: pending.instance,
-  });
+  };
+
+  // Signing in again is this same flow run against an account that is already
+  // registered, so adding it unconditionally would leave a second row for it.
+  // The configuration is still written back, since the label comes from the
+  // instance and is only as current as the last sign-in.
+  const store = await loadAccountStore();
+  const isRegistered = store.accounts.some(
+    (account) => account.id === pending.accountId,
+  );
+  if (isRegistered) {
+    await updateAccount(config);
+  } else {
+    await addAccount(config);
+  }
 
   await clearPendingOAuth();
 }

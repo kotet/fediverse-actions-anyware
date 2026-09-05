@@ -57,6 +57,31 @@ export async function addAccount(
 }
 
 /**
+ * Replaces the configuration of an account that is already registered.
+ *
+ * Which account is active is not touched: the account is the same one, so a
+ * change to what is known about it is no reason to act as somebody else.
+ *
+ * @returns The new state, unchanged if no account carries that ID.
+ */
+export async function updateAccount(
+  config: HomeAccountConfig,
+): Promise<HomeAccountStoreState> {
+  const state = await loadAccountStore();
+  if (!state.accounts.some((account) => account.id === config.id)) {
+    return state;
+  }
+  const next: HomeAccountStoreState = {
+    ...state,
+    accounts: state.accounts.map((account) =>
+      account.id === config.id ? config : account,
+    ),
+  };
+  await saveAccountStore(next);
+  return next;
+}
+
+/**
  * Removes an account. If the removed account was active, switches to the first remaining account.
  *
  * @returns The new state after removal.

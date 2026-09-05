@@ -13,6 +13,7 @@ import {
 } from "./mastodon-credentials";
 import {
   buildAuthorizationUrl,
+  type MastodonApp,
   registerMastodonApp,
 } from "./mastodon-api-client";
 import {
@@ -104,17 +105,44 @@ export class MastodonHomeAccount implements HomeAccount {
     return instanceHostname !== null && hostnameOf(url) === instanceHostname;
   }
 
-  async authenticate(): Promise<void> {
-    const redirectUri = browser.runtime.getURL("popup/oauth-callback.html");
-    const app = await registerMastodonApp(this.instance, redirectUri);
+  /**
+   * The app registration to authorize against, made only when there is none to
+   * reuse.
+   *
+   * An instance keeps every registration it is asked for and lists them to the
+   * user as authorized apps, so registering afresh on each sign-in would leave a
+   * growing row of this extension there. Reuse is what `logout()` deliberately
+   * leaves the registration behind for, and re-authentication needs it just as
+   * much.
+   *
+   * A registration is only good for the instance and redirect it was made
+   * against, so one made for either of those being different is replaced —
+   * along with the token that came from it.
+   */
+  private async appRegistration(redirectUri: string): Promise<MastodonApp> {
+    const stored = await loadMastodonCredentials(this.accountId);
+    if (
+      stored !== null &&
+      stored.instance === this.instance &&
+      stored.redirectUri === redirectUri
+    ) {
+      return { clientId: stored.clientId, clientSecret: stored.clientSecret };
+    }
 
-    const credentials = {
+    const app = await registerMastodonApp(this.instance, redirectUri);
+    await saveMastodonCredentials(this.accountId, {
       instance: this.instance,
       clientId: app.clientId,
       clientSecret: app.clientSecret,
       redirectUri,
-    };
-    await saveMastodonCredentials(this.accountId, credentials);
+    });
+    return app;
+  }
+
+  async authenticate(): Promise<void> {
+    const redirectUri = browser.runtime.getURL("popup/oauth-callback.html");
+    const app = await this.appRegistration(redirectUri);
+
     await savePendingOAuth({
       accountId: this.accountId,
       instance: this.instance,
