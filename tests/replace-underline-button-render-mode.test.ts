@@ -3,12 +3,16 @@ import { ReplaceUnderlineButtonRenderMode } from "../src/button-render-modes";
 import type {
   ActionButtonReplacer,
   ActionButtonSpec,
+  ActionDirection,
   ActionErrorKind,
   ActionResult,
   ButtonKind,
   ExtractedPost,
   PostActionKind,
 } from "../src/core";
+
+/** Class the fake replacer marks an active button with, standing in for the host's own. */
+const HOST_ACTIVE_CLASS = "host-active";
 
 /**
  * Stands in for a page adapter's button replacement capability.
@@ -41,6 +45,10 @@ class FakeActionButtonReplacer implements ActionButtonReplacer {
     this.restoreCallCount += 1;
     post.insertionTarget.replaceChildren();
   }
+
+  setActionButtonActive(button: HTMLElement, active: boolean): void {
+    button.classList.toggle(HOST_ACTIVE_CLASS, active);
+  }
 }
 
 const ACTION_KINDS: readonly PostActionKind[] = [
@@ -60,27 +68,45 @@ function createPost(): ExtractedPost {
   };
 }
 
-/** An action button spec whose handler records the calls made to it. */
+/** An action button spec whose handlers record the calls made to them. */
 type SpiedAction = ActionButtonSpec & {
-  readonly onClick: Mock<() => Promise<ActionResult>>;
+  readonly onPressStart: Mock<() => void>;
+  readonly onClick: Mock<(direction: ActionDirection) => Promise<ActionResult>>;
 };
 
 /**
- * Builds a spec per action kind, all reporting the same outcome.
+ * What a home account answers when the action succeeds.
  *
- * `reply` is the one kind that leaves no state on the post, matching what the app
- * layer declares, so a suite covering all kinds covers both cases.
+ * `reply` is the one kind that leaves no state on the post, so a suite covering
+ * all kinds covers both cases.
+ */
+function successOf(
+  kind: PostActionKind,
+  direction: ActionDirection,
+): ActionResult {
+  if (kind === "reply") return { ok: true, active: null };
+  return { ok: true, active: direction === "apply" };
+}
+
+/**
+ * Builds a spec per action kind.
  *
- * @param result What every handler reports, or a promise the test settles itself.
+ * @param result What every handler reports regardless of direction, or a promise
+ *   the test settles itself. Omitted, each handler answers as a home instance
+ *   would for the direction it was given.
  */
 function createActions(
-  result: ActionResult | Promise<ActionResult> = { ok: true },
+  result?: ActionResult | Promise<ActionResult>,
 ): SpiedAction[] {
   return ACTION_KINDS.map((kind) => ({
     kind,
     label: kind,
-    activatesOnSuccess: kind !== "reply",
-    onClick: vi.fn<() => Promise<ActionResult>>(async () => await result),
+    initiallyActive: false,
+    onPressStart: vi.fn<() => void>(),
+    onClick: vi.fn<(direction: ActionDirection) => Promise<ActionResult>>(
+      async (direction) =>
+        result === undefined ? successOf(kind, direction) : await result,
+    ),
   }));
 }
 
@@ -200,6 +226,18 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
     expect(staleActions[0]?.onClick).not.toHaveBeenCalled();
   });
 
+  it("押し下げの時点でクリックに要る準備を始める", () => {
+    const post = createPost();
+    const actions = createActions();
+    new ReplaceUnderlineButtonRenderMode(new FakeActionButtonReplacer()).render(
+      post,
+      actions,
+    );
+    buttonsIn(post)[0]?.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    expect(actions[0]?.onPressStart).toHaveBeenCalledTimes(1);
+    expect(actions[0]?.onClick).not.toHaveBeenCalled();
+  });
+
   describe("アクション結果の表示", () => {
     /** Mirror of the render mode's own timings. */
     const SUCCESS_MESSAGE_MS = 4000;
@@ -219,7 +257,7 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
 
     function createAction(
       kind: PostActionKind,
-      result: ActionResult | Promise<ActionResult>,
+      result?: ActionResult | Promise<ActionResult>,
     ): SpiedAction {
       const action = createActions(result).find(
         (candidate) => candidate.kind === kind,
@@ -252,9 +290,10 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
     });
 
     it("描画した直後は状態を表さない", () => {
-      const button = renderSingleAction(createAction("favourite", { ok: true }));
+      const button = renderSingleAction(createAction("favourite"));
       expect(button.hasAttribute("data-faa-state")).toBe(false);
       expect(button.hasAttribute("data-faa-active")).toBe(false);
+      expect(button.classList).not.toContain(HOST_ACTIVE_CLASS);
       expect(button.title).toBe("actionButtonHomeAccountTitle:favourite");
     });
 
@@ -274,7 +313,7 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
     });
 
     it("成功するとアクティブ表示になり、一定時間後に状態を述べる文言へ変わる", async () => {
-      const button = renderSingleAction(createAction("favourite", { ok: true }));
+      const button = renderSingleAction(createAction("favourite"));
       button.click();
       await vi.advanceTimersByTimeAsync(0);
       expect(button.hasAttribute("data-faa-active")).toBe(true);
@@ -287,8 +326,15 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
       expect(button.getAttribute("aria-label")).toBe("actionStateActive:favourite");
     });
 
+    it("アクティブ表示はホスト側の見え方もページアダプターに任せる", async () => {
+      const button = renderSingleAction(createAction("favourite"));
+      button.click();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(button.classList).toContain(HOST_ACTIVE_CLASS);
+    });
+
     it("状態を残さないアクションは成功しても既定の見え方へ戻る", async () => {
-      const button = renderSingleAction(createAction("reply", { ok: true }));
+      const button = renderSingleAction(createAction("reply"));
       button.click();
       await vi.advanceTimersByTimeAsync(0);
       expect(button.hasAttribute("data-faa-active")).toBe(false);
@@ -331,18 +377,13 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
     });
 
     it("アクティブになった後に失敗しても、表示が戻るとアクティブのままになる", async () => {
-      const action: SpiedAction = {
-        kind: "favourite",
-        label: "favourite",
-        activatesOnSuccess: true,
-        onClick: vi
-          .fn<() => Promise<ActionResult>>()
-          .mockResolvedValueOnce({ ok: true })
-          .mockResolvedValueOnce({
-            ok: false,
-            error: { kind: "network", message: "boom" },
-          }),
-      };
+      const action = createAction("favourite");
+      action.onClick
+        .mockResolvedValueOnce({ ok: true, active: true })
+        .mockResolvedValueOnce({
+          ok: false,
+          error: { kind: "network", message: "boom" },
+        });
       const button = renderSingleAction(action);
       button.click();
       await vi.advanceTimersByTimeAsync(SUCCESS_MESSAGE_MS);
@@ -369,6 +410,82 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
       expect(console.error).toHaveBeenCalledWith(
         expect.stringContaining("Favourite failed: HTTP 418"),
       );
+    });
+  });
+
+  describe("アクション状態の維持と取り消し", () => {
+    const SUCCESS_MESSAGE_MS = 4000;
+
+    /** Renders one favourite button, optionally already in effect on the post. */
+    function renderFavourite(initiallyActive = false): {
+      action: SpiedAction;
+      button: HTMLButtonElement;
+    } {
+      const source = createActions().find((candidate) => candidate.kind === "favourite");
+      if (source === undefined) throw new Error("favourite が作られなかった");
+      const action: SpiedAction = { ...source, initiallyActive };
+      const post = createPost();
+      new ReplaceUnderlineButtonRenderMode(new FakeActionButtonReplacer()).render(
+        post,
+        [action],
+      );
+      const button = buttonsIn(post)[0];
+      if (button === undefined) throw new Error("ボタンが描画されなかった");
+      return { action, button };
+    }
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+      vi.restoreAllMocks();
+    });
+
+    it("非アクティブなボタンの最初のクリックは実行として送る", async () => {
+      const { action, button } = renderFavourite();
+      button.click();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(action.onClick).toHaveBeenCalledWith("apply");
+    });
+
+    it("アクティブなボタンをもう一度クリックすると取り消しとして送る", async () => {
+      const { action, button } = renderFavourite();
+      button.click();
+      await vi.advanceTimersByTimeAsync(0);
+      button.click();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(action.onClick.mock.calls).toEqual([["apply"], ["undo"]]);
+    });
+
+    it("取り消しが成功すると非アクティブへ戻り、取り消した旨を述べる", async () => {
+      const { button } = renderFavourite();
+      button.click();
+      await vi.advanceTimersByTimeAsync(0);
+      button.click();
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(button.hasAttribute("data-faa-active")).toBe(false);
+      expect(button.classList).not.toContain(HOST_ACTIVE_CLASS);
+      expect(button.title).toBe("actionStateUndone:favourite");
+
+      await vi.advanceTimersByTimeAsync(SUCCESS_MESSAGE_MS);
+      expect(button.title).toBe("actionButtonHomeAccountTitle:favourite");
+    });
+
+    it("既に実行済みとして渡されたボタンは描画直後からアクティブに見える", () => {
+      const { button } = renderFavourite(true);
+      expect(button.hasAttribute("data-faa-active")).toBe(true);
+      expect(button.classList).toContain(HOST_ACTIVE_CLASS);
+      expect(button.title).toBe("actionStateActive:favourite");
+    });
+
+    it("既に実行済みとして渡されたボタンは最初のクリックが取り消しになる", async () => {
+      const { action, button } = renderFavourite(true);
+      button.click();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(action.onClick).toHaveBeenCalledWith("undo");
     });
   });
 });

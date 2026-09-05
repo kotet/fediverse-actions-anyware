@@ -70,6 +70,12 @@
       "action": { "content": "$1" }
     }
   },
+  "actionStateUndone": {
+    "message": "$ACTION$: undone with your home account",
+    "placeholders": {
+      "action": { "content": "$1" }
+    }
+  },
   "actionStateActive": {
     "message": "$ACTION$: in effect on your home account",
     "placeholders": {

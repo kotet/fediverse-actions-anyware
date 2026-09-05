@@ -1,4 +1,8 @@
-import { buildActionButtons, createHomeAccount } from "../app";
+import {
+  PostActionStateMemory,
+  buildActionButtons,
+  createHomeAccount,
+} from "../app";
 import { ReplaceUnderlineButtonRenderMode } from "../button-render-modes";
 import {
   type HomeAccountConfig,
@@ -33,6 +37,15 @@ import { MastodonPageAdapter } from "../page-adapters";
 const RERENDER_DEBOUNCE_MS = 200;
 
 const pageAdapter = new MastodonPageAdapter();
+
+/**
+ * Outlives the buttons, which are rebuilt on every render, so that an action the
+ * user has taken goes on being shown after the host page redraws the post.
+ */
+const postActionStates = new PostActionStateMemory();
+
+/** Which account the states above were produced by, so a switch can clear them. */
+let accountOfPostActionStates: string | null = null;
 
 let rerenderTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -130,6 +143,13 @@ async function renderActionButtons(): Promise<void> {
     return;
   }
 
+  // What one account has favourited is not what the next one has, so the states
+  // shown on the buttons do not survive a switch of the active account.
+  if (activeConfig.id !== accountOfPostActionStates) {
+    postActionStates.forgetAll();
+    accountOfPostActionStates = activeConfig.id;
+  }
+
   const renderMode = new ReplaceUnderlineButtonRenderMode(pageAdapter);
   const posts = pageAdapter.extractPosts();
   logStatusChange(`[content] Extracted ${posts.length} post(s).`);
@@ -140,7 +160,10 @@ async function renderActionButtons(): Promise<void> {
   pageObserver.disconnect();
   try {
     for (const post of posts) {
-      renderMode.render(post, buildActionButtons(account, post));
+      renderMode.render(
+        post,
+        buildActionButtons(account, post, postActionStates),
+      );
     }
   } finally {
     observePage();

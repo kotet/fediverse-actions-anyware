@@ -48,6 +48,19 @@ export interface ActionButtonReplacer {
    * Safe to call when nothing has been placed.
    */
   restoreActionButtons(post: ExtractedPost): void;
+
+  /**
+   * Gives a substituted button the look the target client uses for an action that
+   * is in effect on the post, or takes that look back off it.
+   *
+   * Lives here rather than in the render mode because how a client marks a button
+   * as "favourited" is part of that client's markup, which only this adapter knows.
+   * The render mode marks the button in its own way as well, so an adapter whose
+   * client offers nothing to reuse may leave this doing nothing.
+   *
+   * @param button An element returned by {@link replaceActionButton}.
+   */
+  setActionButtonActive(button: HTMLElement, active: boolean): void;
 }
 
 /**
@@ -61,6 +74,7 @@ export function supportsActionButtonReplacement(
   const candidate = adapter as Partial<ActionButtonReplacer>;
   return (
     typeof candidate.replaceActionButton === "function" &&
-    typeof candidate.restoreActionButtons === "function"
+    typeof candidate.restoreActionButtons === "function" &&
+    typeof candidate.setActionButtonActive === "function"
   );
 }

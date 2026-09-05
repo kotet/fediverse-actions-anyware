@@ -25,6 +25,17 @@ const DISABLING_ATTRIBUTES: readonly string[] = ["disabled", "aria-disabled"];
 /** Class Mastodon adds to a button it has disabled, e.g. bookmark for anonymous viewers. */
 const DISABLED_CLASS = "disabled";
 
+/**
+ * Class Mastodon puts on an icon button whose action is in effect on the post.
+ *
+ * Its own client sets it the same way for every action (`icon-button.tsx` builds
+ * the class list from an `active` prop), and the color that follows comes from the
+ * stylesheet alone — `.icon-button.star-icon.active`, `.bookmark-icon.active`, and
+ * `.icon-button.active` for the rest — so a substituted button carrying the class
+ * takes on the client's own look with nothing else to copy.
+ */
+const ACTIVE_CLASS = "active";
+
 function collectButtonsByKind(
   actionBar: HTMLElement,
 ): Readonly<Partial<Record<ButtonKind, HTMLElement>>> {
@@ -59,6 +70,10 @@ function neutralizeHostButton(button: HTMLElement): void {
   if (button instanceof HTMLButtonElement) {
     button.disabled = false;
   }
+  // A visitor logged in to the target instance sees its own buttons marked for the
+  // actions it has taken there. The copy acts as the home account, whose state is
+  // a different one, so it starts out unmarked either way.
+  button.classList.remove(ACTIVE_CLASS);
   // The copy would otherwise duplicate the host's id.
   button.removeAttribute("id");
 }
@@ -131,6 +146,10 @@ export class MastodonPageAdapter implements PageAdapter, ActionButtonReplacer {
     parent.insertBefore(substitute, original);
     original.style.display = "none";
     return substitute;
+  }
+
+  setActionButtonActive(button: HTMLElement, active: boolean): void {
+    button.classList.toggle(ACTIVE_CLASS, active);
   }
 
   restoreActionButtons(post: ExtractedPost): void {

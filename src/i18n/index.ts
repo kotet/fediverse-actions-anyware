@@ -36,6 +36,7 @@ const MESSAGE_KEYS = [
   "actionButtonHomeAccountTitle",
   "actionStateRunning",
   "actionStateSucceeded",
+  "actionStateUndone",
   "actionStateActive",
   "actionErrorUnauthenticated",
   "actionErrorNetwork",

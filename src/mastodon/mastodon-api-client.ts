@@ -1,4 +1,9 @@
-import type { ActionError, ActionErrorKind } from "../core/types";
+import type {
+  ActionDirection,
+  ActionError,
+  ActionErrorKind,
+  ApiActionKind,
+} from "../core/types";
 
 const APP_NAME = "Fediverse Actions Anyware";
 const SCOPES = "read write";
@@ -20,6 +25,37 @@ export interface MastodonStatus {
   account: {
     acct: string;
   };
+  /**
+   * Whether each action is in effect for the account whose token was used.
+   *
+   * Optional because the instance only includes them for an authorized request,
+   * and an older instance may not include all of them.
+   */
+  favourited?: boolean;
+  reblogged?: boolean;
+  bookmarked?: boolean;
+}
+
+/** The field of a {@link MastodonStatus} that reports each action's state. */
+const ACTION_STATE_FIELDS: Readonly<
+  Record<ApiActionKind, "favourited" | "reblogged" | "bookmarked">
+> = {
+  favourite: "favourited",
+  boost: "reblogged",
+  bookmark: "bookmarked",
+};
+
+/**
+ * Reads whether `action` is in effect on `status`.
+ *
+ * @returns `undefined` when the instance did not report the field, which leaves
+ *   the caller to fall back on what it asked for.
+ */
+export function readActionState(
+  action: ApiActionKind,
+  status: MastodonStatus,
+): boolean | undefined {
+  return status[ACTION_STATE_FIELDS[action]];
 }
 
 /**
@@ -214,47 +250,40 @@ export async function searchStatus(
   return data.statuses[0] ?? null;
 }
 
-export async function favouriteStatus(
-  instance: string,
-  accessToken: string,
-  statusId: string,
-): Promise<void> {
-  await requestMastodonApi(
-    "Favourite",
-    `https://${instance}/api/v1/statuses/${statusId}/favourite`,
-    {
-      method: "POST",
-      headers: { Authorization: `Bearer ${accessToken}` },
-    },
-  );
-}
+/** Path segment under `/api/v1/statuses/:id/` that carries out each action. */
+const STATUS_ACTION_PATHS: Readonly<
+  Record<ApiActionKind, Readonly<Record<ActionDirection, string>>>
+> = {
+  favourite: { apply: "favourite", undo: "unfavourite" },
+  boost: { apply: "reblog", undo: "unreblog" },
+  bookmark: { apply: "bookmark", undo: "unbookmark" },
+};
 
-export async function boostStatus(
+/**
+ * Puts an action into effect on a status, or takes it back off.
+ *
+ * Every one of these endpoints answers with the status as it stands afterwards,
+ * so the state to display comes back with the action and costs no extra request.
+ *
+ * @returns The updated status. For a boost this is the reblog rather than the
+ *   status that was boosted, so its `id` is a different one; only the action state
+ *   fields are meant to be read from it.
+ */
+export async function requestStatusAction(
   instance: string,
   accessToken: string,
+  action: ApiActionKind,
+  direction: ActionDirection,
   statusId: string,
-): Promise<void> {
-  await requestMastodonApi(
-    "Boost",
-    `https://${instance}/api/v1/statuses/${statusId}/reblog`,
+): Promise<MastodonStatus> {
+  const path = STATUS_ACTION_PATHS[action][direction];
+  const response = await requestMastodonApi(
+    `${direction === "apply" ? "Applying" : "Undoing"} ${action}`,
+    `https://${instance}/api/v1/statuses/${statusId}/${path}`,
     {
       method: "POST",
       headers: { Authorization: `Bearer ${accessToken}` },
     },
   );
-}
-
-export async function bookmarkStatus(
-  instance: string,
-  accessToken: string,
-  statusId: string,
-): Promise<void> {
-  await requestMastodonApi(
-    "Bookmark",
-    `https://${instance}/api/v1/statuses/${statusId}/bookmark`,
-    {
-      method: "POST",
-      headers: { Authorization: `Bearer ${accessToken}` },
-    },
-  );
+  return (await response.json()) as MastodonStatus;
 }

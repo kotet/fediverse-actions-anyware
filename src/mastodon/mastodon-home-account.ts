@@ -1,4 +1,9 @@
-import type { ActionResult, ApiActionKind, AuthState } from "../core/types";
+import type {
+  ActionDirection,
+  ActionResult,
+  ApiActionKind,
+  AuthState,
+} from "../core/types";
 import type { HomeAccount } from "../core/home-account";
 import {
   loadMastodonCredentials,
@@ -137,14 +142,29 @@ export class MastodonHomeAccount implements HomeAccount {
 
   async performAction(
     action: ApiActionKind,
+    direction: ActionDirection,
     postUrl: string,
   ): Promise<ActionResult> {
     return await requestActionFromBackground({
       type: "mastodon:perform-action",
       accountId: this.accountId,
       action,
+      direction,
       postUrl,
     });
+  }
+
+  async startResolvingPost(postUrl: string): Promise<void> {
+    try {
+      await sendMastodonActionRequest({
+        type: "mastodon:start-resolving-post",
+        accountId: this.accountId,
+        postUrl,
+      });
+    } catch {
+      // Nothing was promised. A background script that cannot be reached now is
+      // reported by the action this was getting ready for.
+    }
   }
 
   async openPost(postUrl: string): Promise<ActionResult> {

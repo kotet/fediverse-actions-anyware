@@ -5,6 +5,7 @@ import type {
   HomeAccount,
 } from "../core";
 import { getMessage, type MessageKey } from "../i18n";
+import type { PostActionStateMemory } from "./post-action-state-memory";
 
 /** API action kinds offered to the user, with the message key for their label. */
 const API_ACTION_LABEL_KEYS: ReadonlyArray<{
@@ -24,19 +25,39 @@ const API_ACTION_LABEL_KEYS: ReadonlyArray<{
  *
  * @param account The active account that executes actions.
  * @param post The target post.
+ * @param stateMemory Where the states these actions leave on posts are kept, so
+ *   that buttons built for a later render start out showing them.
  */
 export function buildActionButtons(
   account: HomeAccount,
   post: ExtractedPost,
+  stateMemory: PostActionStateMemory,
 ): ActionButtonSpec[] {
+  // Every action begins by resolving the post onto the home instance, so pressing
+  // any of these buttons gets the same work started.
+  const startResolving = (): void => {
+    void account.startResolvingPost(post.postUrl);
+  };
+
   const apiButtons: ActionButtonSpec[] = API_ACTION_LABEL_KEYS.map(
     ({ kind, labelKey }) => ({
       kind,
       label: getMessage(labelKey),
-      // Each of these puts the post into a state the home account keeps: the
-      // button goes on showing it once the call succeeds.
-      activatesOnSuccess: true,
-      onClick: () => account.performAction(kind, post.postUrl),
+      initiallyActive: stateMemory.isActive(post.postUrl, kind),
+      onPressStart: startResolving,
+      onClick: async (direction) => {
+        const result = await account.performAction(
+          kind,
+          direction,
+          post.postUrl,
+        );
+        // Recorded on the way past rather than by the render mode, because it has
+        // to outlive the button the render mode is showing it on.
+        if (result.ok && result.active !== null) {
+          stateMemory.remember(post.postUrl, kind, result.active);
+        }
+        return result;
+      },
     }),
   );
 
@@ -45,9 +66,10 @@ export function buildActionButtons(
   const replyButton: ActionButtonSpec = {
     kind: "reply",
     label: getMessage("actionLabelReply"),
-    // Opening a tab changes nothing about the post, and the tab arriving in front
-    // of the user is itself the acknowledgement.
-    activatesOnSuccess: false,
+    // Opening a tab changes nothing about the post, so there is never a state to
+    // start from and the tab arriving in front of the user is the acknowledgement.
+    initiallyActive: false,
+    onPressStart: startResolving,
     onClick: () => account.openPost(post.postUrl),
   };
 

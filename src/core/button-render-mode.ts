@@ -1,4 +1,5 @@
 import type {
+  ActionDirection,
   ActionResult,
   ButtonRenderModeKind,
   ExtractedPost,
@@ -17,20 +18,32 @@ export interface ActionButtonSpec {
   /** Label displayed on the button. */
   readonly label: string;
   /**
-   * Whether succeeding leaves the post in this action's own state — favourited,
-   * boosted, bookmarked — which the button keeps showing afterwards.
+   * Whether the post is known to be in this action's state already, so the button
+   * is rendered active and its first click undoes the action.
    *
-   * Replying has no such state: it opens the post on the home instance and leaves
-   * nothing behind on the target post, so its button returns to its resting look.
+   * Only ever true for a post acted on earlier in this tab: the state a post is in
+   * before that is not fetched, since learning it would cost one request per post
+   * on screen.
    */
-  readonly activatesOnSuccess: boolean;
+  readonly initiallyActive: boolean;
+  /**
+   * Handler called once the button has been pressed but before it is clicked.
+   *
+   * Lets the work a click will need start while the button is still held down.
+   * Nothing is reported back, and a press that never becomes a click simply
+   * discards it.
+   */
+  readonly onPressStart: () => void;
   /**
    * Handler called when the button is clicked.
    *
    * Reports how the action ended instead of swallowing it, because showing the
    * outcome is the render mode's responsibility (spec 3.8).
+   *
+   * @param direction Which way to act, decided by the render mode from the state
+   *   the button is currently showing.
    */
-  readonly onClick: () => Promise<ActionResult>;
+  readonly onClick: (direction: ActionDirection) => Promise<ActionResult>;
 }
 
 /**

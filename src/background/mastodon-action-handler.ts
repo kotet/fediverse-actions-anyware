@@ -4,6 +4,7 @@ import {
   getMastodonAuthState,
   performMastodonAction,
   resolveMastodonPost,
+  startResolvingMastodonPost,
   type MastodonActionRequest,
 } from "../mastodon";
 
@@ -43,7 +44,8 @@ function unknownAccountFailure(accountId: string): ActionResult {
 async function openInNewTab(url: string): Promise<ActionResult> {
   try {
     await browser.tabs.create({ url });
-    return { ok: true };
+    // Opening a tab leaves nothing on the post to report a state for.
+    return { ok: true, active: null };
   } catch (error) {
     return {
       ok: false,
@@ -65,7 +67,7 @@ async function openInNewTab(url: string): Promise<ActionResult> {
  */
 export async function handleMastodonActionRequest(
   request: MastodonActionRequest,
-): Promise<AuthState | ActionResult> {
+): Promise<AuthState | ActionResult | undefined> {
   switch (request.type) {
     case "mastodon:get-auth-state":
       return await getMastodonAuthState(request.accountId);
@@ -77,8 +79,22 @@ export async function handleMastodonActionRequest(
         instance,
         request.accountId,
         request.action,
+        request.direction,
         request.postUrl,
       );
+    }
+
+    case "mastodon:start-resolving-post": {
+      const instance = await findMastodonInstance(request.accountId);
+      // An unknown account is left unreported here too: whichever action follows
+      // names the same account and reports it.
+      if (instance === null) return undefined;
+      await startResolvingMastodonPost(
+        instance,
+        request.accountId,
+        request.postUrl,
+      );
+      return undefined;
     }
 
     case "mastodon:open-post": {

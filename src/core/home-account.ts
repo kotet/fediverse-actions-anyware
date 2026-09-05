@@ -1,4 +1,9 @@
-import type { ActionResult, ApiActionKind, AuthState } from "./types";
+import type {
+  ActionDirection,
+  ActionResult,
+  ApiActionKind,
+  AuthState,
+} from "./types";
 
 /**
  * Home account abstraction.
@@ -37,9 +42,26 @@ export interface HomeAccount {
    * using the active account.
    *
    * @param action The kind of action to execute.
+   * @param direction Whether to put the action into effect or take it back off.
    * @param postUrl URL of the target post (URL on the target instance).
    */
-  performAction(action: ApiActionKind, postUrl: string): Promise<ActionResult>;
+  performAction(
+    action: ApiActionKind,
+    direction: ActionDirection,
+    postUrl: string,
+  ): Promise<ActionResult>;
+
+  /**
+   * Begins resolving the target post onto the home instance, so that an action
+   * arriving shortly afterwards does not have to wait for that round trip.
+   *
+   * Optional to call and best-effort: a failure is not reported here, because the
+   * action that follows makes the same request and reports it. Calling it more than
+   * once for the same post does not resolve it more than once.
+   *
+   * @param postUrl URL of the target post (URL on the target instance).
+   */
+  startResolvingPost(postUrl: string): Promise<void>;
 
   /**
    * Resolves the target post onto the home instance and opens it there.

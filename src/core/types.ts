@@ -29,6 +29,19 @@ export type PostActionKind = "favourite" | "boost" | "bookmark" | "reply";
  */
 export type ApiActionKind = Exclude<PostActionKind, "reply">;
 
+/**
+ * Which way an action is being carried out on a post.
+ *
+ * A separate axis from {@link PostActionKind} rather than a kind of its own: the
+ * user is offered one button per action, and which way that button acts follows
+ * from the state it is showing.
+ */
+export type ActionDirection =
+  /** Put the action into effect on the post. */
+  | "apply"
+  /** Take it back off the post. */
+  | "undo";
+
 /** Button render mode. Switched by user settings. */
 export type ButtonRenderModeKind =
   /**
@@ -63,7 +76,18 @@ export interface ExtractedPost {
 
 /** Result of an action execution. */
 export type ActionResult =
-  | { readonly ok: true }
+  | {
+      readonly ok: true;
+      /**
+       * Whether the action is in effect on the post now, or `null` for an action
+       * that leaves no state on it (replying).
+       *
+       * Taken from what the home instance reports rather than assumed from the
+       * direction that was asked for, so that a post already acted on outside this
+       * extension ends up displayed as it really is.
+       */
+      readonly active: boolean | null;
+    }
   | { readonly ok: false; readonly error: ActionError };
 
 /**

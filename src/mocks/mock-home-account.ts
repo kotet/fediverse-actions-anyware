@@ -1,4 +1,5 @@
 import type {
+  ActionDirection,
   ActionResult,
   ApiActionKind,
   AuthState,
@@ -53,16 +54,18 @@ export class MockHomeAccount implements HomeAccount {
 
   async performAction(
     action: ApiActionKind,
+    direction: ActionDirection,
     postUrl: string,
   ): Promise<ActionResult> {
-    console.log(`[mock] action: ${action}, postUrl: ${postUrl}`);
+    console.log(`[mock] action: ${action} ${direction}, postUrl: ${postUrl}`);
     if (this.failActions) {
       return {
         ok: false,
         error: { kind: "failed", message: "[mock] action failed" },
       };
     }
-    return { ok: true };
+    // With no instance to report a state, the state is simply the one asked for.
+    return { ok: true, active: direction === "apply" };
   }
 
   async openPost(postUrl: string): Promise<ActionResult> {
@@ -75,6 +78,11 @@ export class MockHomeAccount implements HomeAccount {
         error: { kind: "failed", message: "[mock] open post failed" },
       };
     }
-    return { ok: true };
+    return { ok: true, active: null };
+  }
+
+  async startResolvingPost(postUrl: string): Promise<void> {
+    // Nothing to resolve against, so this only records that the press arrived.
+    console.log(`[mock] startResolvingPost: ${postUrl}`);
   }
 }

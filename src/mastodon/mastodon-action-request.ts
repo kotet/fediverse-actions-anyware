@@ -1,4 +1,9 @@
-import type { ActionResult, ApiActionKind, AuthState } from "../core/types";
+import type {
+  ActionDirection,
+  ActionResult,
+  ApiActionKind,
+  AuthState,
+} from "../core/types";
 
 /**
  * Messages that carry a home account operation to the background script.
@@ -16,6 +21,7 @@ export type MastodonActionRequest =
       readonly type: "mastodon:perform-action";
       readonly accountId: string;
       readonly action: ApiActionKind;
+      readonly direction: ActionDirection;
       readonly postUrl: string;
     }
   // Resolution and opening are one request: the sender may be a content script,
@@ -25,6 +31,13 @@ export type MastodonActionRequest =
       readonly type: "mastodon:open-post";
       readonly accountId: string;
       readonly postUrl: string;
+    }
+  // Sent while a button is held down, so the resolution both of the requests above
+  // begin with is already under way by the time one of them arrives.
+  | {
+      readonly type: "mastodon:start-resolving-post";
+      readonly accountId: string;
+      readonly postUrl: string;
     };
 
 /** Response type produced for each request type. */
@@ -32,12 +45,15 @@ export interface MastodonActionResponses {
   "mastodon:get-auth-state": AuthState;
   "mastodon:perform-action": ActionResult;
   "mastodon:open-post": ActionResult;
+  /** Nothing: the request is best-effort and its outcome is not reported. */
+  "mastodon:start-resolving-post": undefined;
 }
 
 const REQUEST_TYPES: ReadonlySet<string> = new Set([
   "mastodon:get-auth-state",
   "mastodon:perform-action",
   "mastodon:open-post",
+  "mastodon:start-resolving-post",
 ]);
 
 /**

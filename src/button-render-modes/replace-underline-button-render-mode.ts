@@ -1,6 +1,7 @@
 import type {
   ActionButtonReplacer,
   ActionButtonSpec,
+  ActionDirection,
   ActionError,
   ActionErrorKind,
   ButtonRenderMode,
@@ -75,21 +76,35 @@ const ERROR_MESSAGE_KEYS: Readonly<Record<ActionErrorKind, MessageKey>> = {
  * state or was already in it. Both look the same on purpose, since a favourite
  * that just succeeded and a post that is favourited are the same fact.
  *
+ * An active button undoes its action when clicked again, as the host's own button
+ * would. Which way a click acts is read off the state being displayed rather than
+ * the post's real one, so that a button showing "not favourited" never takes a
+ * favourite away; the two only differ until the first click, and the actions are
+ * idempotent, so acting on a post that was already in that state does no harm and
+ * the answer brings the display in line.
+ *
  * Nothing here adds or removes nodes, so the content script's `MutationObserver` —
  * which watches `childList` alone — is not woken by showing a result.
  */
 class ActionButtonStateDisplay {
   private readonly button: HTMLElement;
   private readonly action: ActionButtonSpec;
+  /** Knows how to give the host's button the look of an action in effect. */
+  private readonly replacer: ActionButtonReplacer;
   /** Wording for a button that is neither running, failed, nor active. */
   private readonly restingDescription: string;
   private running = false;
-  private active = false;
+  private active: boolean;
   private settleTimer: ReturnType<typeof setTimeout> | undefined;
 
-  constructor(button: HTMLElement, action: ActionButtonSpec) {
+  constructor(
+    button: HTMLElement,
+    action: ActionButtonSpec,
+    replacer: ActionButtonReplacer,
+  ) {
     this.button = button;
     this.action = action;
+    this.replacer = replacer;
     // The button is copied from a host one and inherits its label, which claims
     // the action happens on the target instance. Say where it actually runs, so
     // the change is conveyed to assistive technology too and not by the underline
@@ -98,7 +113,11 @@ class ActionButtonStateDisplay {
       "actionButtonHomeAccountTitle",
       action.label,
     );
-    this.describe(this.restingDescription);
+    // A button built for a re-render takes over a state its predecessor left on
+    // the post, so it starts out showing it rather than at rest.
+    this.active = action.initiallyActive;
+    this.showActiveState();
+    this.settle();
   }
 
   /** Runs the action, showing it in flight and then reporting how it ended. */
@@ -108,32 +127,54 @@ class ActionButtonStateDisplay {
     // does not hand the press back to the page.
     if (this.running) return;
     this.running = true;
+    const direction: ActionDirection = this.active ? "undo" : "apply";
     this.clearSettleTimer();
     this.button.setAttribute(PROGRESS_ATTRIBUTE, "running");
     this.describe(getMessage("actionStateRunning", this.action.label));
 
-    const result = await this.action.onClick();
+    const result = await this.action.onClick(direction);
 
     this.running = false;
     if (result.ok) {
-      this.showSuccess();
+      this.showSuccess(result.active);
     } else {
       this.showFailure(result.error);
     }
   }
 
-  private showSuccess(): void {
-    if (!this.action.activatesOnSuccess) {
+  /**
+   * @param active The state the post ended up in, or `null` if the action leaves
+   *   none on it.
+   */
+  private showSuccess(active: boolean | null): void {
+    this.button.removeAttribute(PROGRESS_ATTRIBUTE);
+    if (active === null) {
       this.settle();
       return;
     }
-    this.active = true;
-    this.button.setAttribute(ACTIVE_ATTRIBUTE, "");
-    this.button.removeAttribute(PROGRESS_ATTRIBUTE);
-    this.describe(getMessage("actionStateSucceeded", this.action.label));
-    // Only the wording is temporary. The active look is the post's state now, so
-    // it stays.
+    this.active = active;
+    this.showActiveState();
+    // Says what was just done; the wording for the state itself follows. Which of
+    // the two it was is read from the state reached, not from the direction asked
+    // for, so the button never claims to have changed something it did not.
+    this.describe(
+      getMessage(
+        active ? "actionStateSucceeded" : "actionStateUndone",
+        this.action.label,
+      ),
+    );
+    // Only the wording is temporary. The look is the post's state now, so it stays.
     this.settleAfter(SUCCESS_MESSAGE_MS);
+  }
+
+  /** Marks the button as carrying its action, both this mode's way and the host's. */
+  private showActiveState(): void {
+    if (this.active) {
+      this.button.setAttribute(ACTIVE_ATTRIBUTE, "");
+    } else {
+      this.button.removeAttribute(ACTIVE_ATTRIBUTE);
+    }
+    this.replacer.setActionButtonActive(this.button, this.active);
   }
 
   private showFailure(error: ActionError): void {
@@ -219,12 +260,21 @@ export class ReplaceUnderlineButtonRenderMode implements ButtonRenderMode {
       if (button === null) continue;
 
       button.classList.add(UNDERLINE_BUTTON_CLASS);
-      const stateDisplay = new ActionButtonStateDisplay(button, action);
+      const stateDisplay = new ActionButtonStateDisplay(
+        button,
+        action,
+        this.replacer,
+      );
 
       for (const type of SWALLOWED_EVENT_TYPES) {
         button.addEventListener(type, (event) => {
           event.preventDefault();
           event.stopPropagation();
+          // The press is where the work the click needs is set going, buying back
+          // the time the button spends held down.
+          if (type === "mousedown") {
+            action.onPressStart();
+          }
           if (type === "click") {
             void stateDisplay.handleClick();
           }

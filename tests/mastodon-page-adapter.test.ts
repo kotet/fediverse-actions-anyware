@@ -136,6 +136,43 @@ describe("MastodonPageAdapter", () => {
       const withoutButtons = { ...post, existingButtons: {} };
       expect(adapter.replaceActionButton(withoutButtons, "favourite")).toBeNull();
     });
+
+    it("ホスト側で実行済みの見た目を引き継がない", () => {
+      const adapter = new MastodonPageAdapter();
+      const post = adapter.extractPosts()[0];
+      const original = post?.existingButtons.favourite;
+      if (post === undefined || original === undefined) throw new Error("fixture broken");
+      // A visitor logged in to the target instance sees its own state marked here,
+      // which says nothing about the home account the copy acts as.
+      original.classList.add("active");
+
+      expect(adapter.replaceActionButton(post, "favourite")?.classList).not.toContain(
+        "active",
+      );
+    });
+  });
+
+  describe("setActionButtonActive", () => {
+    beforeEach(() => {
+      document.body.innerHTML = statusPageFixture;
+    });
+
+    it("実行中の状態をホスト自身のクラスで表す", () => {
+      const adapter = new MastodonPageAdapter();
+      const post = adapter.extractPosts()[0];
+      if (post === undefined) throw new Error("fixture broken");
+      const substitute = adapter.replaceActionButton(post, "favourite");
+      if (substitute === null) throw new Error("fixture broken");
+
+      adapter.setActionButtonActive(substitute, true);
+      expect(substitute.classList).toContain("active");
+      // The kind-specific color comes from the class the host button already
+      // carries, so nothing else has to be copied.
+      expect(substitute.classList).toContain("star-icon");
+
+      adapter.setActionButtonActive(substitute, false);
+      expect(substitute.classList).not.toContain("active");
+    });
   });
 
   describe("restoreActionButtons", () => {
