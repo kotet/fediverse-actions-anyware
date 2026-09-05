@@ -38,6 +38,16 @@ export interface HomeAccount {
   logout(): Promise<void>;
 
   /**
+   * Deletes everything this account has stored, for use when the account itself
+   * is being removed.
+   *
+   * Separate from {@link logout}, which keeps what a later login can reuse. Which
+   * keys an account holds is known only to its own implementation, so the layer
+   * removing the account asks for them to be deleted rather than deleting them.
+   */
+  deleteStoredCredentials(): Promise<void>;
+
+  /**
    * Executes an API action (favourite, boost, bookmark) on the target post
    * using the active account.
    *

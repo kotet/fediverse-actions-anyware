@@ -1,6 +1,6 @@
-import { loadAccountStore } from "../core";
+import { onAccountStoreChanged } from "../core";
 import { localizeHtml } from "../i18n";
-import { renderAccountList } from "./account-list-view";
+import { refreshAccountList } from "./account-list-view";
 import { setupAddAccountView } from "./add-account-view";
 
 /** Views to switch between in the popup. */
@@ -25,8 +25,8 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   setupAddAccountView({
-    onAccountAdded: (state) => {
-      renderAccountList(state);
+    onAccountAdded: () => {
+      void refreshAccountList();
       showView("list");
     },
     onCancel: () => {
@@ -34,5 +34,11 @@ document.addEventListener("DOMContentLoaded", () => {
     },
   });
 
-  void loadAccountStore().then(renderAccountList);
+  // A Mastodon account is only registered once the OAuth tab reaches the callback
+  // page, which is another realm and finishes while this popup is already open.
+  onAccountStoreChanged(() => {
+    void refreshAccountList();
+  });
+
+  void refreshAccountList();
 });

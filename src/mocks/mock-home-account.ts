@@ -52,6 +52,12 @@ export class MockHomeAccount implements HomeAccount {
     this.authState = "unauthenticated";
   }
 
+  async deleteStoredCredentials(): Promise<void> {
+    // Nothing is stored: the state lives on this object and on the registered
+    // configuration, which the caller removing the account deletes itself.
+    console.log("[mock] deleteStoredCredentials");
+  }
+
   async performAction(
     action: ApiActionKind,
     direction: ActionDirection,

@@ -7,6 +7,7 @@ import type {
 import type { HomeAccount } from "../core/home-account";
 import {
   loadMastodonCredentials,
+  removeMastodonCredentials,
   saveMastodonCredentials,
   savePendingOAuth,
 } from "./mastodon-credentials";
@@ -131,6 +132,8 @@ export class MastodonHomeAccount implements HomeAccount {
   }
 
   async logout(): Promise<void> {
+    // Only the token goes. The app registration stays behind so that logging in
+    // again does not have to register this extension with the instance afresh.
     const credentials = await loadMastodonCredentials(this.accountId);
     if (credentials) {
       await saveMastodonCredentials(this.accountId, {
@@ -138,6 +141,10 @@ export class MastodonHomeAccount implements HomeAccount {
         accessToken: undefined,
       });
     }
+  }
+
+  async deleteStoredCredentials(): Promise<void> {
+    await removeMastodonCredentials(this.accountId);
   }
 
   async performAction(

@@ -1,36 +1,127 @@
+import { createHomeAccount, removeHomeAccount } from "../app";
 import {
   type AuthState,
   type HomeAccountConfig,
   type HomeAccountStoreState,
-  removeAccount,
+  loadAccountStore,
   setActiveAccount,
 } from "../core";
-import { getMessage } from "../i18n";
+import { getMessage, type MessageKey } from "../i18n";
 
-const AUTH_STATE_KEYS: Record<AuthState, Parameters<typeof getMessage>[0]> = {
+const AUTH_STATE_KEYS: Record<AuthState, MessageKey> = {
   authenticated: "authStateAuthenticated",
   unauthenticated: "authStateUnauthenticated",
   error: "authStateError",
 };
 
 /**
+ * Reads an account's authentication state, reporting an unreachable one as an error.
+ *
+ * For a Mastodon account the answer comes from the background script, and a
+ * failure to reach it is not something the account itself can report. Showing the
+ * account as being in error is what that leaves the user: it is the state the
+ * extension is in as far as this account is concerned.
+ */
+async function readAuthState(account: HomeAccountConfig): Promise<AuthState> {
+  try {
+    return await createHomeAccount(account).getAuthState();
+  } catch {
+    return "error";
+  }
+}
+
+/**
+ * Whether logging in and out is something this account can do at all.
+ *
+ * A mock account has no instance to authenticate against; its state comes from
+ * the configuration it was registered with, and v1 offers no way to edit that, so
+ * controls for it would do nothing the user could see.
+ */
+function supportsAuthentication(account: HomeAccountConfig): boolean {
+  return account.software !== "mock";
+}
+
+/**
+ * Whether the extension may still act on the pages it is loaded into.
+ *
+ * MV3 lets the user withdraw host access after installation. The content script
+ * is what would otherwise report that, and it is the very thing that stops
+ * running, so the popup is the only place the user can be told.
+ *
+ * Doubt is resolved in favour of access being granted. The origins this extension
+ * holds come from its `content_scripts` match pattern rather than from a declared
+ * `host_permissions`, so a check that misread them would put a warning in front of
+ * every user for no reason.
+ */
+async function hasHostAccess(): Promise<boolean> {
+  try {
+    const granted = await browser.permissions.getAll();
+    return (granted.origins ?? []).length > 0;
+  } catch {
+    return true;
+  }
+}
+
+function noticeElement(): HTMLParagraphElement {
+  return document.getElementById("account-list-notice") as HTMLParagraphElement;
+}
+
+/** Puts a message above the add button, or clears it when `message` is empty. */
+function showNotice(message: string, isError: boolean): void {
+  const notice = noticeElement();
+  notice.textContent = message;
+  notice.classList.toggle("error", isError);
+  notice.classList.toggle("hidden", message === "");
+}
+
+/** Reloads the store and re-renders. Used after anything that changes an account. */
+export async function refreshAccountList(): Promise<void> {
+  await renderAccountList(await loadAccountStore());
+}
+
+/**
  * Re-renders the account list based on the store state.
  *
  * @param state The current store state.
  */
-export function renderAccountList(state: HomeAccountStoreState): void {
+async function renderAccountList(state: HomeAccountStoreState): Promise<void> {
   const list = document.getElementById("account-list") as HTMLUListElement;
   const emptyMessage = document.getElementById(
     "empty-message",
   ) as HTMLParagraphElement;
 
+  // Collected before anything is drawn, so the list is not shown with the states
+  // missing and then filled in under the user's eyes.
+  const authStates = await Promise.all(state.accounts.map(readAuthState));
+
   list.replaceChildren();
   emptyMessage.classList.toggle("hidden", state.accounts.length > 0);
 
-  for (const account of state.accounts) {
+  state.accounts.forEach((account, index) => {
     list.append(
-      createAccountItem(account, account.id === state.activeAccountId),
+      createAccountItem(
+        account,
+        account.id === state.activeAccountId,
+        authStates[index] ?? "error",
+      ),
     );
+  });
+
+  // The extension shows no buttons at all while the active account cannot act
+  // (spec 3.2), and a page that simply looks untouched gives the user nothing to
+  // go on. This is the only place that can say why.
+  const activeIndex = state.accounts.findIndex(
+    (account) => account.id === state.activeAccountId,
+  );
+  const activeAuthState = activeIndex === -1 ? null : authStates[activeIndex];
+  const isBlocked = activeAuthState !== null && activeAuthState !== "authenticated";
+
+  // Host access comes first: without it nothing runs on the page at all, which
+  // would make the account's own state beside the point.
+  if (!(await hasHostAccess())) {
+    showNotice(getMessage("popupNoHostAccess"), true);
+  } else {
+    showNotice(isBlocked ? getMessage("popupActiveAccountNotUsable") : "", false);
   }
 }
 
@@ -39,10 +130,12 @@ export function renderAccountList(state: HomeAccountStoreState): void {
  *
  * @param account The account configuration.
  * @param isActive Whether this is the active account.
+ * @param authState The account's authentication state.
  */
 function createAccountItem(
   account: HomeAccountConfig,
   isActive: boolean,
+  authState: AuthState,
 ): HTMLLIElement {
   const item = document.createElement("li");
   item.className = isActive ? "account-item active" : "account-item";
@@ -54,7 +147,7 @@ function createAccountItem(
   radio.checked = isActive;
   radio.title = getMessage("accountActivateTitle");
   radio.addEventListener("change", () => {
-    void setActiveAccount(account.id).then(renderAccountList);
+    void setActiveAccount(account.id).then(refreshAccountList);
   });
 
   const body = document.createElement("div");
@@ -66,10 +159,7 @@ function createAccountItem(
 
   const meta = document.createElement("div");
   meta.className = "account-meta";
-  const authStateLabel = account.mockAuthState
-    ? getMessage(AUTH_STATE_KEYS[account.mockAuthState])
-    : "-";
-  meta.textContent = `${account.software} / ${authStateLabel}`;
+  meta.textContent = `${account.software} / ${getMessage(AUTH_STATE_KEYS[authState])}`;
 
   body.append(label, meta);
 
@@ -79,9 +169,83 @@ function createAccountItem(
   removeButton.textContent = "✕";
   removeButton.title = getMessage("accountRemoveTitle");
   removeButton.addEventListener("click", () => {
-    void removeAccount(account.id).then(renderAccountList);
+    void removeHomeAccount(account).then(refreshAccountList);
   });
 
   item.append(radio, body, removeButton);
+
+  const authActions = createAuthActions(account, authState);
+  if (authActions !== null) item.append(authActions);
+
   return item;
+}
+
+/**
+ * Creates the row of login and logout controls for one account.
+ *
+ * An authenticated account is offered a way to authenticate again as well as to
+ * log out: the state is read from whether a token is stored, never from asking
+ * the instance, so a token the instance has since rejected still reads as
+ * authenticated and re-authenticating is the only way out of it.
+ *
+ * @returns The row, or `null` for an account that has nothing to log in to.
+ */
+function createAuthActions(
+  account: HomeAccountConfig,
+  authState: AuthState,
+): HTMLElement | null {
+  if (!supportsAuthentication(account)) return null;
+
+  const actions = document.createElement("div");
+  actions.className = "account-auth-actions";
+
+  if (authState === "authenticated") {
+    actions.append(
+      createAuthenticateButton(account, "accountReauthenticateButton"),
+      createLogoutButton(account),
+    );
+  } else {
+    actions.append(createAuthenticateButton(account, "accountLoginButton"));
+  }
+  return actions;
+}
+
+function createAuthenticateButton(
+  account: HomeAccountConfig,
+  labelKey: MessageKey,
+): HTMLButtonElement {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "account-auth-button";
+  button.textContent = getMessage(labelKey);
+  button.addEventListener("click", () => {
+    button.disabled = true;
+    showNotice("", false);
+    void createHomeAccount(account)
+      .authenticate()
+      .catch((error: unknown) => {
+        // Only the sentence is localized: what comes back names the operation and
+        // the HTTP status, which has no translation to show in its place.
+        const reason =
+          error instanceof Error ? error.message : getMessage("unknownError");
+        showNotice(getMessage("mastodonOAuthError", reason), true);
+      })
+      .finally(() => {
+        button.disabled = false;
+      });
+  });
+  return button;
+}
+
+function createLogoutButton(account: HomeAccountConfig): HTMLButtonElement {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "account-auth-button";
+  button.textContent = getMessage("accountLogoutButton");
+  button.addEventListener("click", () => {
+    // Logging out changes no account configuration, so nothing else would prompt
+    // a re-render; the list is refreshed here.
+    void createHomeAccount(account).logout().then(refreshAccountList);
+  });
+  return button;
 }

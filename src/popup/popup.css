@@ -24,11 +24,26 @@ h2 {
 .account-item {
   display: flex;
   align-items: center;
+  /* The login controls sit on a line of their own; the popup is too narrow to
+     keep them beside a label that may be a full user@instance address. */
+  flex-wrap: wrap;
   gap: 6px;
   padding: 6px;
   border: 1px solid #ddd;
   border-radius: 4px;
   margin-bottom: 6px;
+}
+
+.account-auth-actions {
+  display: flex;
+  gap: 6px;
+  /* Takes the whole line, pushing itself below the label row. */
+  flex-basis: 100%;
+}
+
+.account-auth-button {
+  font-size: 11px;
+  padding: 3px 8px;
 }
 
 .account-item.active {
@@ -72,6 +87,23 @@ h2 {
   font-size: 12px;
   color: #888;
   margin: 0 0 8px;
+}
+
+/* Says why the extension is showing nothing on pages, or what went wrong here. */
+.account-notice {
+  font-size: 11px;
+  margin: 0 0 8px;
+  padding: 6px;
+  border: 1px solid #eedcae;
+  border-radius: 4px;
+  background: #fff8e6;
+  color: #6a5520;
+}
+
+.account-notice.error {
+  border-color: #f0c0c0;
+  background: #fff0f0;
+  color: #a33;
 }
 
 .hidden {

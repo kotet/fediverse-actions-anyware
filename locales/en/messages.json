@@ -34,6 +34,15 @@
   "authStateError": { "message": "Error" },
   "accountActivateTitle": { "message": "Set as active" },
   "accountRemoveTitle": { "message": "Remove" },
+  "accountLoginButton": { "message": "Sign in" },
+  "accountReauthenticateButton": { "message": "Sign in again" },
+  "accountLogoutButton": { "message": "Sign out" },
+  "popupActiveAccountNotUsable": {
+    "message": "The active account is not signed in, so no action buttons are shown on pages."
+  },
+  "popupNoHostAccess": {
+    "message": "This extension is not allowed to run on websites, so it does nothing on any page. Grant it access from the add-ons manager."
+  },
   "mastodonInstanceRequired": { "message": "Please enter the instance URL." },
   "mastodonOAuthStarted": { "message": "Mastodon authorization page opened. Please complete authentication in the new tab." },
   "mastodonOAuthError": {

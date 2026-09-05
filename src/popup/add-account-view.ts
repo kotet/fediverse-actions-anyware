@@ -2,7 +2,6 @@ import {
   addAccount,
   type HomeAccountConfig,
   type HomeAccountSoftware,
-  type HomeAccountStoreState,
   loadAccountStore,
 } from "../core";
 import { getMessage } from "../i18n";
@@ -10,8 +9,8 @@ import { startMastodonOAuth } from "../mastodon";
 
 /** Callbacks to notify the caller of the result of operations on the add account view. */
 export interface AddAccountViewCallbacks {
-  /** Called when account addition is complete. Receives the updated state after addition. */
-  readonly onAccountAdded: (state: HomeAccountStoreState) => void;
+  /** Called when account addition is complete. */
+  readonly onAccountAdded: () => void;
   /** Called when the user cancels and returns to the list. */
   readonly onCancel: () => void;
 }
@@ -72,10 +71,10 @@ export function setupAddAccountView(callbacks: AddAccountViewCallbacks): void {
 
     void buildMockAccountConfig()
       .then(addAccount)
-      .then((nextState) => {
+      .then(() => {
         form.reset();
         syncInstanceField();
-        callbacks.onAccountAdded(nextState);
+        callbacks.onAccountAdded();
       });
   });
 

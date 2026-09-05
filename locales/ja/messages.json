@@ -81,6 +81,21 @@
   "accountRemoveTitle": {
     "message": "削除"
   },
+  "accountLoginButton": {
+    "message": "ログイン"
+  },
+  "accountReauthenticateButton": {
+    "message": "再認証"
+  },
+  "accountLogoutButton": {
+    "message": "ログアウト"
+  },
+  "popupActiveAccountNotUsable": {
+    "message": "アクティブなアカウントが未認証のため、ページにアクションボタンを表示しません。"
+  },
+  "popupNoHostAccess": {
+    "message": "ウェブサイト上で動作する権限がないため、どのページでも何も行いません。アドオンマネージャーから許可してください。"
+  },
   "mastodonInstanceRequired": {
     "message": "インスタンスのURLを入力してください。"
   },
