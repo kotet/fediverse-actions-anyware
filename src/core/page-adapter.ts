@@ -15,6 +15,20 @@ export interface PageAdapter {
   isSupportedPage(): boolean;
 
   /**
+   * Determines whether the page was served to a signed-in user, so that the
+   * client's own action buttons already act as that user's account.
+   *
+   * Answered from the page alone, without reaching the network or storage, so
+   * that it can be asked on every render.
+   *
+   * What marks a page as signed in is part of the target client's markup, which
+   * is why this is the adapter's to answer. An adapter that cannot tell answers
+   * `false`: the extension then offers its buttons, which is the more visible of
+   * the two ways to be wrong and leaves the host's own buttons working besides.
+   */
+  hasSignedInSession(): boolean;
+
+  /**
    * Extracts the list of posts on the page. Supports both individual post pages and timeline views.
    *
    * @returns An array of each post's URL, existing button elements, and insertion target.

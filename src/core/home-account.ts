@@ -19,16 +19,6 @@ export interface HomeAccount {
   getAuthState(): Promise<AuthState>;
 
   /**
-   * Determines whether `url` is served by this account's own home instance.
-   *
-   * Answered from the configured instance alone, without reaching the network,
-   * so that a caller can ask it about every registered account cheaply.
-   *
-   * @param url Absolute URL to test. A string that is not a URL is not owned.
-   */
-  ownsUrl(url: string): boolean;
-
-  /**
    * Initiates the OAuth flow to log in.
    * Also used for re-authentication when already authenticated or after an auth error.
    */

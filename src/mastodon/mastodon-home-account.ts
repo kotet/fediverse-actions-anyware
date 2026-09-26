@@ -55,20 +55,6 @@ async function requestActionFromBackground(
 }
 
 /**
- * Hostname of `url`, or `null` if it is not a parsable absolute URL.
- *
- * The hostname is what `URL` normalizes it to, which is lowercased and free of
- * the port and any userinfo, so two hostnames obtained this way compare directly.
- */
-function hostnameOf(url: string): string | null {
-  try {
-    return new URL(url).hostname;
-  } catch {
-    return null;
-  }
-}
-
-/**
  * Home account backed by a Mastodon instance.
  *
  * Every operation that reaches the home instance is delegated to the background
@@ -94,15 +80,6 @@ export class MastodonHomeAccount implements HomeAccount {
       type: "mastodon:get-auth-state",
       accountId: this.accountId,
     });
-  }
-
-  ownsUrl(url: string): boolean {
-    // The instance is stored as a bare hostname, but is only ever used as the
-    // authority of `https://<instance>/...`, so it is compared as that authority
-    // rather than as a string: a stray trailing slash or a differing case then
-    // does not change the answer.
-    const instanceHostname = hostnameOf(`https://${this.instance}`);
-    return instanceHostname !== null && hostnameOf(url) === instanceHostname;
   }
 
   /**

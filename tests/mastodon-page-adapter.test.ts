@@ -23,6 +23,45 @@ describe("MastodonPageAdapter", () => {
     });
   });
 
+  describe("hasSignedInSession", () => {
+    /**
+     * Places the boot payload Mastodon's server writes into the document, or
+     * leaves the document without one when `payload` is `null`.
+     */
+    function setInitialState(payload: string | null): void {
+      document.body.innerHTML = "";
+      if (payload === null) return;
+      const element = document.createElement("script");
+      element.type = "application/json";
+      element.id = "initial-state";
+      element.textContent = payload;
+      document.body.append(element);
+    }
+
+    it("meta.me を持つページをログイン中と判定する", () => {
+      setInitialState(JSON.stringify({ meta: { me: "109252080473231374" } }));
+      expect(new MastodonPageAdapter().hasSignedInSession()).toBe(true);
+    });
+
+    it("未ログインで配信されたページ (fixture) を未ログインと判定する", () => {
+      document.body.innerHTML = statusPageFixture;
+      // The capture does carry a payload; what it lacks is an account in it.
+      expect(document.getElementById("initial-state")).not.toBeNull();
+      expect(new MastodonPageAdapter().hasSignedInSession()).toBe(false);
+    });
+
+    it.each([
+      ["payload がない", null],
+      ["JSON として壊れている", "{"],
+      ["meta がない", "{}"],
+      ["meta.me がない", JSON.stringify({ meta: { access_token: null } })],
+      ["meta.me が文字列でない", JSON.stringify({ meta: { me: null } })],
+    ])("%s ページは未ログインとして扱う", (_case, payload) => {
+      setInitialState(payload);
+      expect(new MastodonPageAdapter().hasSignedInSession()).toBe(false);
+    });
+  });
+
   describe("extractPosts", () => {
     beforeEach(() => {
       document.body.innerHTML = statusPageFixture;

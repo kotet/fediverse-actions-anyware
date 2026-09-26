@@ -36,6 +36,36 @@ const DISABLED_CLASS = "disabled";
  */
 const ACTIVE_CLASS = "active";
 
+/**
+ * Id of the element Mastodon's server puts the web client's boot payload in, as
+ * JSON. It sits in the document head, written before any script runs.
+ */
+const INITIAL_STATE_ELEMENT_ID = "initial-state";
+
+/**
+ * Reads the id of the account the page was served to out of the boot payload.
+ *
+ * `meta.me` is Mastodon's own definition of being signed in: the server writes
+ * it only when the request carried a session (`InitialStateSerializer#meta`),
+ * and the client derives `signedIn` from nothing else (`identity_context.tsx`).
+ *
+ * @returns The account id, or `null` when the payload is absent, unreadable, or
+ *   carries no account — all of which are answered as "not signed in".
+ */
+function viewerAccountId(payload: string): string | null {
+  let state: unknown;
+  try {
+    state = JSON.parse(payload);
+  } catch {
+    return null;
+  }
+  if (typeof state !== "object" || state === null) return null;
+  const meta = (state as { meta?: unknown }).meta;
+  if (typeof meta !== "object" || meta === null) return null;
+  const me = (meta as { me?: unknown }).me;
+  return typeof me === "string" ? me : null;
+}
+
 function collectButtonsByKind(
   actionBar: HTMLElement,
 ): Readonly<Partial<Record<ButtonKind, HTMLElement>>> {
@@ -92,6 +122,15 @@ function neutralizeHostButton(button: HTMLElement): void {
 export class MastodonPageAdapter implements PageAdapter, ActionButtonReplacer {
   isSupportedPage(): boolean {
     return document.querySelector("#mastodon") !== null;
+  }
+
+  hasSignedInSession(): boolean {
+    // Read afresh on every call rather than kept: the payload is fixed for the
+    // life of the document, but a page that does not carry one would otherwise
+    // have its answer cached before the document is fully in place.
+    const element = document.getElementById(INITIAL_STATE_ELEMENT_ID);
+    if (element === null) return false;
+    return viewerAccountId(element.textContent ?? "") !== null;
   }
 
   extractPosts(): ExtractedPost[] {

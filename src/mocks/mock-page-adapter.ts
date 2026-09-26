@@ -12,6 +12,12 @@ export class MockPageAdapter implements PageAdapter {
     return true;
   }
 
+  hasSignedInSession(): boolean {
+    // Answers that no client of its own is acting on the page, so that the mock
+    // adapter never suppresses the extension on the page being used to debug it.
+    return false;
+  }
+
   extractPosts(): ExtractedPost[] {
     const articles = Array.from(document.querySelectorAll("article"));
     return articles.map((article, index) => ({

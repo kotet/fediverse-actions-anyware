@@ -35,10 +35,6 @@ class RecordingHomeAccount implements HomeAccount {
     return "authenticated";
   }
 
-  ownsUrl(): boolean {
-    return false;
-  }
-
   async authenticate(): Promise<void> {}
 
   async logout(): Promise<void> {}

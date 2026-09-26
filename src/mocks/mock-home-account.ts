@@ -35,13 +35,6 @@ export class MockHomeAccount implements HomeAccount {
     return this.authState;
   }
 
-  ownsUrl(_url: string): boolean {
-    // Owns nothing, so that a mock account never suppresses the extension on the
-    // page being used to debug it. There is no instance behind it that a page
-    // could belong to.
-    return false;
-  }
-
   async authenticate(): Promise<void> {
     console.log("[mock] authenticate");
     this.authState = "authenticated";
