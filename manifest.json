@@ -1,14 +1,12 @@
 {
   "manifest_version": 3,
   "name": "__MSG_extensionName__",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "__MSG_extensionDescription__",
   "default_locale": "en",
 
   "permissions": [
-    "activeTab",
-    "storage",
-    "tabs"
+    "storage"
   ],
 
   "web_accessible_resources": [
@@ -19,13 +17,12 @@
   ],
 
   "background": {
-    "service_worker": "background/service_worker.js",
     "scripts": ["background/service_worker.js"]
   },
 
   "browser_specific_settings": {
     "gecko": {
-      "id": "fediverse-actions-anyware@example.com"
+      "id": "fediverse-actions-anyware@kotet.jp"
     }
   },
 
