@@ -3,7 +3,7 @@
     "message": "Fediverse Actions Anyware"
   },
   "extensionDescription": {
-    "message": "Adds fediverse action buttons to any web page."
+    "message": "他の Mastodon インスタンスの投稿に、自分のアカウントでお気に入り・ブースト・ブックマーク・返信ができます。"
   },
   "popupHomeAccountsHeading": {
     "message": "ホームアカウント"

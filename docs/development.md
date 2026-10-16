@@ -119,6 +119,8 @@ MCP から観測できるのは次の3経路だけ。**確認したいことを�
 
 ## Firefox MV3 向けの注意点
 
-- `data_collection_permissions` は将来的に必須になる予定（現時点では警告のみ）。
+- `browser_specific_settings.gecko.data_collection_permissions` は新規の拡張機能では必須で、無いと AMO への提出がブロックされる。外部へ送るデータを変えたときは、申告の値も見直すこと。
+- `gecko.strict_min_version` は `140.0`。組み込みの同意画面が 140 以降でしか使えないため。
+- デスクトップ専用なので `gecko_android` は持たない。そのため `web-ext lint` に `KEY_FIREFOX_ANDROID_UNSUPPORTED_BY_MIN_VERSION` の警告が1件出るが、想定どおり。
 
 詳細は [Firefox MV3 ドキュメント](https://mzl.la/4r6SF1L) を参照。

@@ -30,7 +30,8 @@ await esbuild.build({
   outdir: outputDirectory,
   outbase: "src",
   format: "iife",
-  target: "firefox128",
+  // Matches `strict_min_version` in manifest.json.
+  target: "firefox140",
   define: { FAA_INCLUDE_MOCKS: String(!isRelease) },
 });
 

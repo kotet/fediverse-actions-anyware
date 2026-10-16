@@ -1,7 +1,7 @@
 {
   "name": "fediverse-actions-anyware",
   "version": "0.1.0",
-  "description": "Adds fediverse action buttons to any web page.",
+  "description": "Favourite, boost, bookmark and reply to posts on other Mastodon instances with your own account.",
   "type": "module",
   "scripts": {
     "build": "node build.mjs",

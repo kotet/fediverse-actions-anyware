@@ -1,6 +1,6 @@
 {
   "extensionName": { "message": "Fediverse Actions Anyware" },
-  "extensionDescription": { "message": "Adds fediverse action buttons to any web page." },
+  "extensionDescription": { "message": "Favourite, boost, bookmark and reply to posts on other Mastodon instances with your own account." },
   "popupHomeAccountsHeading": { "message": "Home Accounts" },
   "popupEmptyAccountsMessage": { "message": "No accounts registered." },
   "popupShowAddAccountButton": { "message": "Add Account" },
