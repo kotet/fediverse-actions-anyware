@@ -9,6 +9,8 @@ import {
   loadAccountStore,
   onAccountStoreChanged,
   supportsActionButtonReplacement,
+  type AuthState,
+  type HomeAccount,
 } from "../core";
 import { MastodonPageAdapter } from "../page-adapters";
 
@@ -72,6 +74,58 @@ function observePage(): void {
   pageObserver.observe(document.body, { childList: true, subtree: true });
 }
 
+/**
+ * Counts the renders started so far, so that a render can tell whether a later
+ * one has started while it was waiting.
+ *
+ * Renders are started by DOM changes and by store changes alike, and each one
+ * waits on storage and on the background before touching the page. Without this,
+ * a render that started before the only account was removed could finish after
+ * the one that followed the removal, putting back buttons bound to that account.
+ */
+let renderGeneration = 0;
+
+/** The account buttons act through, and the id of its configuration. */
+interface DisplayableAccount {
+  readonly id: string;
+  readonly account: HomeAccount;
+}
+
+/**
+ * Finds the account buttons may act through, or `null` when no button may be
+ * shown on the page at all (spec 3.2).
+ *
+ * Every reason not to show buttons ends in `null` here, so that the caller has a
+ * single place to take back buttons an earlier render left behind. That includes
+ * an account that cannot be built or asked for its state: its buttons could only
+ * fail, so the error is logged and the buttons go.
+ */
+async function findDisplayableAccount(): Promise<DisplayableAccount | null> {
+  const store = await loadAccountStore();
+  const activeConfig = getActiveAccount(store);
+  if (activeConfig === null) {
+    logStatusChange("[content] No active home account. Not displaying buttons.");
+    return null;
+  }
+
+  let account: HomeAccount;
+  let authState: AuthState;
+  try {
+    account = createHomeAccount(activeConfig);
+    authState = await account.getAuthState();
+  } catch (error) {
+    console.error("[content] Failed to check the active account.", error);
+    return null;
+  }
+  if (authState !== "authenticated") {
+    logStatusChange(
+      `[content] Active account is not authenticated (${authState}). Not displaying buttons.`,
+    );
+    return null;
+  }
+  return { id: activeConfig.id, account };
+}
+
 async function renderActionButtons(): Promise<void> {
   // Checked before touching storage so unrelated pages cost one querySelector.
   if (!pageAdapter.isSupportedPage()) {
@@ -94,7 +148,9 @@ async function renderActionButtons(): Promise<void> {
   // through the search API before acting on it — and would act as the active
   // account even when that is a different one. Nothing is gained, so the
   // extension stays out of the way entirely. Asked before the store is read
-  // because it costs one lookup in the page and no storage access.
+  // because it costs one lookup in the page and no storage access. Unlike the
+  // reasons in findDisplayableAccount, this one is fixed for the life of the
+  // document, so no earlier render can have left buttons to take back.
   if (pageAdapter.hasSignedInSession()) {
     logStatusChange(
       "[content] This page's own client is signed in. Not displaying buttons.",
@@ -102,27 +158,19 @@ async function renderActionButtons(): Promise<void> {
     return;
   }
 
-  const store = await loadAccountStore();
-  const activeConfig = getActiveAccount(store);
-  if (activeConfig === null) {
-    logStatusChange("[content] No active home account. Not displaying buttons.");
-    return;
-  }
-
-  const account = createHomeAccount(activeConfig);
-  const authState = await account.getAuthState();
-  if (authState !== "authenticated") {
-    logStatusChange(
-      `[content] Active account is not authenticated (${authState}). Not displaying buttons.`,
-    );
+  renderGeneration += 1;
+  const generation = renderGeneration;
+  const displayable = await findDisplayableAccount();
+  // A render started later has read a newer store and has the final say.
+  if (generation !== renderGeneration) {
     return;
   }
 
   // What one account has favourited is not what the next one has, so the states
   // shown on the buttons do not survive a switch of the active account.
-  if (activeConfig.id !== accountOfPostActionStates) {
+  if (displayable !== null && displayable.id !== accountOfPostActionStates) {
     postActionStates.forgetAll();
-    accountOfPostActionStates = activeConfig.id;
+    accountOfPostActionStates = displayable.id;
   }
 
   const renderMode = new ReplaceUnderlineButtonRenderMode(pageAdapter);
@@ -135,10 +183,14 @@ async function renderActionButtons(): Promise<void> {
   pageObserver.disconnect();
   try {
     for (const post of posts) {
-      renderMode.render(
-        post,
-        buildActionButtons(account, post, postActionStates),
-      );
+      if (displayable === null) {
+        renderMode.clear(post);
+      } else {
+        renderMode.render(
+          post,
+          buildActionButtons(displayable.account, post, postActionStates),
+        );
+      }
     }
   } finally {
     observePage();

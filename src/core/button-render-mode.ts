@@ -55,7 +55,7 @@ export interface ActionButtonSpec {
  * The implementation is switched based on user settings.
  *
  * Suppressing button display when the home account is unauthenticated is handled
- * by the caller layer checking auth state and not calling render at all.
+ * by the caller layer checking auth state and calling clear instead of render.
  */
 export interface ButtonRenderMode {
   /** The kind of this render mode. */
@@ -68,4 +68,13 @@ export interface ButtonRenderMode {
    * @param actions List of action button specs to render.
    */
   render(post: ExtractedPost, actions: readonly ActionButtonSpec[]): void;
+
+  /**
+   * Takes back everything an earlier render left on `post`, leaving the host page
+   * as it would be without this extension. Safe to call when nothing was rendered.
+   *
+   * A button left over from an earlier render still acts through the account that
+   * was active back then, so the caller clears every post once no account may act.
+   */
+  clear(post: ExtractedPost): void;
 }

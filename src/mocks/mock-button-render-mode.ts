@@ -23,4 +23,8 @@ export class MockButtonRenderMode implements ButtonRenderMode {
       `[mock] render buttons: postUrl=${post.postUrl}, mode=${this.mode}`,
     );
   }
+
+  clear(post: ExtractedPost): void {
+    console.log(`[mock] clear buttons: postUrl=${post.postUrl}, mode=${this.mode}`);
+  }
 }

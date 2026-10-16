@@ -251,7 +251,7 @@ export class ReplaceUnderlineButtonRenderMode implements ButtonRenderMode {
   render(post: ExtractedPost, actions: readonly ActionButtonSpec[]): void {
     // Rebuild rather than skip: a button left over from an earlier render still
     // holds a click handler bound to the account that was active back then.
-    this.replacer.restoreActionButtons(post);
+    this.clear(post);
 
     for (const action of actions) {
       // Every offered action has a host button standing for it, so a missing one
@@ -281,5 +281,9 @@ export class ReplaceUnderlineButtonRenderMode implements ButtonRenderMode {
         });
       }
     }
+  }
+
+  clear(post: ExtractedPost): void {
+    this.replacer.restoreActionButtons(post);
   }
 }

@@ -158,6 +158,14 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
     expect(buttonsIn(post)).toHaveLength(ACTION_KINDS.length);
   });
 
+  it("消去すると描画したボタンを元の状態へ戻す", () => {
+    const post = createPost();
+    const renderMode = new ReplaceUnderlineButtonRenderMode(new FakeActionButtonReplacer());
+    renderMode.render(post, createActions());
+    renderMode.clear(post);
+    expect(buttonsIn(post)).toEqual([]);
+  });
+
   it("描画したボタンすべてに下線用のクラスを付ける", () => {
     const post = createPost();
     new ReplaceUnderlineButtonRenderMode(new FakeActionButtonReplacer()).render(
