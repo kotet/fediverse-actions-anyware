@@ -20,7 +20,8 @@ export interface AddAccountViewCallbacks {
  *
  * Toggles input fields based on the software selection and adds the account on submit.
  * Mock accounts complete within the popup; Mastodon accounts open an OAuth tab and
- * complete asynchronously via the callback page.
+ * complete asynchronously via the callback page. The release build offers Mastodon
+ * only.
  */
 export function setupAddAccountView(callbacks: AddAccountViewCallbacks): void {
   const form = document.getElementById("add-account-form") as HTMLFormElement;
@@ -42,6 +43,12 @@ export function setupAddAccountView(callbacks: AddAccountViewCallbacks): void {
   const submitButton = document.getElementById(
     "submit-add-account",
   ) as HTMLButtonElement;
+
+  // The option lives in the shared popup.html, so the release build takes it out
+  // here. It is the first option, so this also makes the next one the default.
+  if (!FAA_INCLUDE_MOCKS) {
+    softwareSelect.querySelector('option[value="mock"]')?.remove();
+  }
 
   // Show the instance field only for non-mock software (those that have an instance).
   const syncInstanceField = (): void => {
@@ -69,13 +76,15 @@ export function setupAddAccountView(callbacks: AddAccountViewCallbacks): void {
       return;
     }
 
-    void buildMockAccountConfig()
-      .then(addAccount)
-      .then(() => {
-        form.reset();
-        syncInstanceField();
-        callbacks.onAccountAdded();
-      });
+    if (FAA_INCLUDE_MOCKS) {
+      void buildMockAccountConfig()
+        .then(addAccount)
+        .then(() => {
+          form.reset();
+          syncInstanceField();
+          callbacks.onAccountAdded();
+        });
+    }
   });
 
   async function handleMastodonSubmit(): Promise<void> {

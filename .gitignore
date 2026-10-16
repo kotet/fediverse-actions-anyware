@@ -1,3 +1,4 @@
 web-ext-artifacts/
 dist/
+dist-release/
 node_modules/

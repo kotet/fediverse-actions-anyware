@@ -8,8 +8,9 @@
 
 | ツール | 用途 | 備考 |
 |--------|------|------|
-| `make build` | TypeScript のコンパイルと `dist/` への出力 | esbuild + 静的ファイルコピー |
-| `make lint` | マニフェストやコードの静的検証 | `make build` を内包、エラー 0 を目指す |
+| `make build` | 開発用ビルド。TypeScript のコンパイルと `dist/` への出力 | esbuild + 静的ファイルコピー。モック実装を含む |
+| `make build-release` | 公開用ビルド。`dist-release/` へ出力し、AMO に提出する zip を `web-ext-artifacts/release/` に作る | モック実装を含まない（ポップアップに `Mock` の選択肢が出ない） |
+| `make lint` | マニフェストやコードの静的検証 | `make build` と `make build-release` を内包し、両方を lint する。エラー 0 を目指す |
 | `make typecheck` | TypeScript の型チェックのみ | ビルドせず型エラーだけ確認 |
 | firefox-devtools MCP | Firefox の操作・拡張機能のインストール | Claude Code から直接操作できる |
 
@@ -18,7 +19,8 @@
 | パス | 役割 |
 |------|------|
 | `src/` | TypeScript ソースファイル |
-| `dist/` | ビルド成果物（gitignore 対象） |
+| `dist/` | 開発用ビルドの成果物（gitignore 対象） |
+| `dist-release/` | 公開用ビルドの成果物（gitignore 対象） |
 | `manifest.json` | 拡張機能マニフェスト（ビルド時に `dist/` へコピー） |
 | `src/popup/popup.html`, `src/popup/popup.css`, `src/content/content.css` | 静的ファイル（ビルド時に `dist/` へコピー） |
 
@@ -87,7 +89,7 @@ MCP から観測できるのは次の3経路だけ。**確認したいことを�
 
 #### 確認の前提を作る
 
-アカウントが1つも登録されていないとボタンは描画されない。**通信を伴わない範囲の確認はモックアカウントで足りる。**
+アカウントが1つも登録されていないとボタンは描画されない。**通信を伴わない範囲の確認はモックアカウントで足りる。** モックアカウントを登録できるのは開発用ビルド（`dist/`）だけで、公開用ビルド（`dist-release/`）では選択肢自体が出ない。
 
 アカウントの登録・切替・削除はポップアップ UI からしか行えず、**ポップアップは MCP から開けないため人間に依頼する**（`AGENTS.md` の「ポップアップは直接開けない」）。依頼文の書き方は [human-only-verification.md](human-only-verification.md) の「人間に依頼する手順を書くとき」に従い、種別（モック）とアクティブにするアカウントまで指定する。`MockHomeAccount` は既定で認証済みを返すため、モックアカウントを1つ登録してアクティブにしてもらえばボタンが表示される状態になる。
 
