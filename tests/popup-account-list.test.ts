@@ -218,4 +218,18 @@ describe("ポップアップのアカウント一覧", () => {
       expect(CREDENTIALS_KEY in storage).toBe(false);
     });
   });
+
+  it("アカウントを作れない設定でも削除できる", async () => {
+    // A mock account under the release build fails the same way, but the build
+    // flag is fixed at compile time, so a Mastodon account missing its instance
+    // stands in for it.
+    storeAccounts([{ id: "m2", software: "mastodon", label: "broken" }]);
+    await refreshAccountList();
+
+    accountItems()[0]?.querySelector<HTMLButtonElement>(".account-remove")?.click();
+
+    await vi.waitFor(() => {
+      expect(accountItems()).toHaveLength(0);
+    });
+  });
 });
