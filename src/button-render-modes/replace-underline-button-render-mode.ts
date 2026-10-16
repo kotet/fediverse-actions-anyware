@@ -251,6 +251,12 @@ export class ReplaceUnderlineButtonRenderMode implements ButtonRenderMode {
   render(post: ExtractedPost, actions: readonly ActionButtonSpec[]): void {
     // Rebuild rather than skip: a button left over from an earlier render still
     // holds a click handler bound to the account that was active back then.
+    // A click still in flight loses its button to this: its outcome is shown on
+    // the detached one, and the new button starts from `initiallyActive` with no
+    // sign of the request. That is accepted. Whoever supplies `initiallyActive`
+    // records where the action ends up, so the next render shows it, and a second
+    // click goes the same way as the first, which an idempotent action makes
+    // harmless.
     this.clear(post);
 
     for (const action of actions) {
