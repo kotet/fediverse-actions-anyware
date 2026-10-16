@@ -7,7 +7,6 @@ import { ReplaceUnderlineButtonRenderMode } from "../button-render-modes";
 import {
   getActiveAccount,
   loadAccountStore,
-  onAccountStoreChanged,
   supportsActionButtonReplacement,
   type AuthState,
   type HomeAccount,
@@ -78,7 +77,7 @@ function observePage(): void {
  * Counts the renders started so far, so that a render can tell whether a later
  * one has started while it was waiting.
  *
- * Renders are started by DOM changes and by store changes alike, and each one
+ * Renders are started by DOM changes and by storage changes alike, and each one
  * waits on storage and on the background before touching the page. Without this,
  * a render that started before the only account was removed could finish after
  * the one that followed the removal, putting back buttons bound to that account.
@@ -207,7 +206,12 @@ if (pageAdapter.isSupportedPage()) {
   observePage();
 }
 
-// Re-renders when account store changes (e.g., adding or switching accounts in the popup).
-onAccountStoreChanged(() => {
+// Re-renders when anything the extension stores changes, not only the account
+// store: logging out or signing in again rewrites an account's credentials alone,
+// and whether buttons may be shown depends on those just as much. Which keys hold
+// them is known only to each account implementation, and the extension writes to
+// storage rarely enough that listening to all of it costs nothing noticeable.
+browser.storage.onChanged.addListener((_changes, areaName) => {
+  if (areaName !== "local") return;
   void renderActionButtons();
 });
