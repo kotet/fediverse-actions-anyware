@@ -4,7 +4,7 @@ A Firefox extension that adds fediverse action buttons (favourite, boost, bookma
 Mastodon pages hosted on instances you are not signed in to, so the action runs on your own home
 instance instead.
 
-Licensed under the MIT License. See [LICENSE](LICENSE).
+Licensed under the Mozilla Public License 2.0. See [LICENSE](LICENSE).
 
 ## Build instructions for AMO reviewers
 
