@@ -27,7 +27,8 @@ export interface ActionButtonSpec {
    */
   readonly initiallyActive: boolean;
   /**
-   * Handler called once the button has been pressed but before it is clicked.
+   * Handler called once the button has been pressed with the primary mouse button
+   * but before it is clicked.
    *
    * Lets the work a click will need start while the button is still held down.
    * Nothing is reported back, and a press that never becomes a click simply

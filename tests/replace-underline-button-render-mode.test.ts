@@ -234,17 +234,26 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
     expect(staleActions[0]?.onClick).not.toHaveBeenCalled();
   });
 
-  it("押し下げの時点でクリックに要る準備を始める", () => {
-    const post = createPost();
-    const actions = createActions();
-    new ReplaceUnderlineButtonRenderMode(new FakeActionButtonReplacer()).render(
-      post,
-      actions,
-    );
-    buttonsIn(post)[0]?.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
-    expect(actions[0]?.onPressStart).toHaveBeenCalledTimes(1);
-    expect(actions[0]?.onClick).not.toHaveBeenCalled();
-  });
+  it.each([
+    { name: "主ボタン", mouseButton: 0, pressStartCount: 1 },
+    { name: "中ボタン", mouseButton: 1, pressStartCount: 0 },
+    { name: "右ボタン", mouseButton: 2, pressStartCount: 0 },
+  ])(
+    "$name の押し下げでクリックに要る準備を始めるのは主ボタンのときだけ",
+    ({ mouseButton, pressStartCount }) => {
+      const post = createPost();
+      const actions = createActions();
+      new ReplaceUnderlineButtonRenderMode(new FakeActionButtonReplacer()).render(
+        post,
+        actions,
+      );
+      buttonsIn(post)[0]?.dispatchEvent(
+        new MouseEvent("mousedown", { bubbles: true, button: mouseButton }),
+      );
+      expect(actions[0]?.onPressStart).toHaveBeenCalledTimes(pressStartCount);
+      expect(actions[0]?.onClick).not.toHaveBeenCalled();
+    },
+  );
 
   describe("アクション結果の表示", () => {
     /** Mirror of the render mode's own timings. */

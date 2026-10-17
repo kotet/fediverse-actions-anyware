@@ -277,8 +277,10 @@ export class ReplaceUnderlineButtonRenderMode implements ButtonRenderMode {
           event.preventDefault();
           event.stopPropagation();
           // The press is where the work the click needs is set going, buying back
-          // the time the button spends held down.
-          if (type === "mousedown") {
+          // the time the button spends held down. Only the primary button counts:
+          // the others never end in a click, so starting the work would only cost
+          // the home instance a request.
+          if (type === "mousedown" && (event as MouseEvent).button === 0) {
             action.onPressStart();
           }
           if (type === "click") {
