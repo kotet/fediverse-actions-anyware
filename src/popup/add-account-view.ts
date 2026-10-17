@@ -1,9 +1,5 @@
-import {
-  addAccount,
-  type HomeAccountConfig,
-  type HomeAccountSoftware,
-  loadAccountStore,
-} from "../core";
+import { buildMockAccountConfig } from "../app";
+import { addAccount, type HomeAccountSoftware } from "../core";
 import { getMessage } from "../i18n";
 import { startMastodonOAuth } from "../mastodon";
 
@@ -121,18 +117,4 @@ export function setupAddAccountView(callbacks: AddAccountViewCallbacks): void {
   }
 
   syncInstanceField();
-}
-
-/** Builds a mock account configuration with a sequential label based on the existing mock account count. */
-async function buildMockAccountConfig(): Promise<HomeAccountConfig> {
-  const state = await loadAccountStore();
-  const mockCount = state.accounts.filter(
-    (account) => account.software === "mock",
-  ).length;
-  return {
-    id: crypto.randomUUID(),
-    software: "mock",
-    label: getMessage("mockAccountLabel", [String(mockCount + 1)]),
-    mockAuthState: "authenticated",
-  };
 }
