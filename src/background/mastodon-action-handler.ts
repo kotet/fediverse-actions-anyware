@@ -1,5 +1,5 @@
 import type { ActionResult, AuthState } from "../core";
-import { loadAccountStore } from "../core";
+import { describeThrown, loadAccountStore } from "../core";
 import {
   getMastodonAuthState,
   performMastodonAction,
@@ -51,9 +51,7 @@ async function openInNewTab(url: string): Promise<ActionResult> {
       ok: false,
       error: {
         kind: "failed",
-        message: `Could not open a tab: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        message: `Could not open a tab: ${describeThrown(error)}`,
       },
     };
   }

@@ -4,6 +4,7 @@ import type {
   ActionErrorKind,
   ApiActionKind,
 } from "../core/types";
+import { describeThrown } from "../core/describe-thrown";
 
 const APP_NAME = "Fediverse Actions Anyware";
 const SCOPES = "read write";
@@ -88,11 +89,6 @@ function errorKindForStatus(status: number): ActionErrorKind {
   if (status === 429) return "rate-limited";
   if (status >= 500) return "network";
   return "failed";
-}
-
-/** Extracts a message from a thrown value of unknown shape. */
-function describeThrown(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }
 
 /**

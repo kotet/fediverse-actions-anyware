@@ -5,6 +5,7 @@ import type {
   AuthState,
 } from "../core/types";
 import type { HomeAccount } from "../core/home-account";
+import { describeThrown } from "../core/describe-thrown";
 import {
   loadMastodonCredentials,
   removeMastodonCredentials,
@@ -46,9 +47,7 @@ async function requestActionFromBackground(
       ok: false,
       error: {
         kind: "failed",
-        message: `The extension's background script did not respond: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        message: `The extension's background script did not respond: ${describeThrown(error)}`,
       },
     };
   }
