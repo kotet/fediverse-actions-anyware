@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title data-i18n="oauthCallbackPageTitle"></title>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 40px 20px;
+        max-width: 600px;
+        margin: 0 auto;
+        color: #333;
+      }
+      h1 { font-size: 1.2em; margin-bottom: 24px; }
+      #status { font-size: 1em; margin: 16px 0; padding: 12px; border-radius: 4px; }
+      .status-loading { background: #f0f4ff; border: 1px solid #c0d0ff; }
+      .status-success { background: #f0fff4; border: 1px solid #c0e8c0; color: #2a6a2a; }
+      .status-error { background: #fff0f0; border: 1px solid #f0c0c0; color: #8b0000; }
+</style>
+  </head>
+  <body>
+    <h1 data-i18n="extensionName"></h1>
+    <div id="status" class="status-loading" data-i18n="oauthCallbackProcessing"></div>
+    <script src="oauth-callback.js"></script>
+  </body>
+</html>

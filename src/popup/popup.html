@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title data-i18n="extensionName"></title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <h1 data-i18n="extensionName"></h1>
+
+    <section id="view-list" class="view">
+      <h2 data-i18n="popupHomeAccountsHeading"></h2>
+      <ul id="account-list" class="account-list"></ul>
+      <p id="empty-message" class="empty-message" data-i18n="popupEmptyAccountsMessage"></p>
+      <p id="account-list-notice" class="account-notice hidden"></p>
+      <button id="show-add-account" type="button" data-i18n="popupShowAddAccountButton"></button>
+    </section>
+
+    <section id="view-add" class="view hidden">
+      <h2 data-i18n="popupAddAccountHeading"></h2>
+      <form id="add-account-form">
+        <label class="field">
+          <span class="field-label" data-i18n="popupSoftwareLabel"></span>
+          <select id="account-software" class="field-input">
+            <option value="mock" data-i18n="popupSoftwareMockOption"></option>
+            <option value="mastodon" data-i18n="popupSoftwareMastodonOption"></option>
+          </select>
+        </label>
+        <label class="field hidden" id="instance-field">
+          <span class="field-label" data-i18n="popupInstanceLabel"></span>
+          <input
+            id="account-instance"
+            class="field-input"
+            type="text"
+            placeholder="mastodon.social"
+            autocomplete="off"
+          />
+        </label>
+        <p id="add-account-error" class="form-error hidden"></p>
+        <div class="form-actions">
+          <button type="button" id="cancel-add-account" data-i18n="popupCancelButton"></button>
+          <button type="submit" id="submit-add-account" data-i18n="popupSubmitButton"></button>
+        </div>
+      </form>
+    </section>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

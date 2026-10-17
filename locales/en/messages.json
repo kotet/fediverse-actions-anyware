@@ -1,0 +1,130 @@
+{
+  "extensionName": { "message": "Fediverse Actions Anyware" },
+  "extensionDescription": { "message": "Favourite, boost, bookmark and reply to posts on other Mastodon instances with your own account." },
+  "popupHomeAccountsHeading": { "message": "Home Accounts" },
+  "popupEmptyAccountsMessage": { "message": "No accounts registered." },
+  "popupShowAddAccountButton": { "message": "Add Account" },
+  "popupAddAccountHeading": { "message": "Add Account" },
+  "popupSoftwareLabel": { "message": "Type" },
+  "popupSoftwareMockOption": { "message": "Mock" },
+  "popupSoftwareMastodonOption": { "message": "Mastodon" },
+  "popupInstanceLabel": { "message": "Instance" },
+  "popupCancelButton": { "message": "Back" },
+  "popupSubmitButton": { "message": "Add" },
+  "oauthCallbackPageTitle": { "message": "Fediverse Actions Anyware - Authentication" },
+  "oauthCallbackProcessing": { "message": "Authenticating..." },
+  "oauthCallbackDenied": {
+    "message": "Authentication denied: $REASON$",
+    "placeholders": {
+      "reason": { "content": "$1" }
+    }
+  },
+  "oauthCallbackCodeMissing": { "message": "Authentication code not found." },
+  "oauthCallbackStateMissing": { "message": "Authentication state not found. Please try again." },
+  "oauthCallbackSucceeded": { "message": "Account successfully added." },
+  "oauthCallbackFailed": {
+    "message": "An error occurred: $REASON$",
+    "placeholders": {
+      "reason": { "content": "$1" }
+    }
+  },
+  "unknownError": { "message": "Unknown error" },
+  "authStateAuthenticated": { "message": "Authenticated" },
+  "authStateUnauthenticated": { "message": "Unauthenticated" },
+  "authStateError": { "message": "Error" },
+  "accountActivateTitle": { "message": "Set as active" },
+  "accountRemoveTitle": { "message": "Remove" },
+  "accountLoginButton": { "message": "Sign in" },
+  "accountReauthenticateButton": { "message": "Sign in again" },
+  "accountLogoutButton": { "message": "Sign out" },
+  "popupActiveAccountNotUsable": {
+    "message": "The active account is not signed in, so no action buttons are shown on pages."
+  },
+  "popupNoHostAccess": {
+    "message": "This extension is not allowed to run on websites, so it does nothing on any page. Grant it access from the add-ons manager."
+  },
+  "mastodonInstanceRequired": { "message": "Please enter the instance URL." },
+  "mastodonOAuthStarted": { "message": "Mastodon authorization page opened. Please complete authentication in the new tab." },
+  "mastodonOAuthError": {
+    "message": "An error occurred while starting Mastodon authentication: $REASON$",
+    "placeholders": {
+      "reason": { "content": "$1" }
+    }
+  },
+  "mockAccountLabel": {
+    "message": "Mock Account $COUNT$",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "actionLabelReply": { "message": "Reply" },
+  "actionLabelFavourite": { "message": "Favourite" },
+  "actionLabelBoost": { "message": "Boost" },
+  "actionLabelBookmark": { "message": "Bookmark" },
+  "actionButtonHomeAccountTitle": {
+    "message": "$ACTION$ with your home account",
+    "placeholders": {
+      "action": { "content": "$1" }
+    }
+  },
+  "actionStateRunning": {
+    "message": "$ACTION$: running…",
+    "placeholders": {
+      "action": { "content": "$1" }
+    }
+  },
+  "actionStateSucceeded": {
+    "message": "$ACTION$: done with your home account",
+    "placeholders": {
+      "action": { "content": "$1" }
+    }
+  },
+  "actionStateUndone": {
+    "message": "$ACTION$: undone with your home account",
+    "placeholders": {
+      "action": { "content": "$1" }
+    }
+  },
+  "actionStateActive": {
+    "message": "$ACTION$: in effect on your home account",
+    "placeholders": {
+      "action": { "content": "$1" }
+    }
+  },
+  "actionErrorUnauthenticated": {
+    "message": "$ACTION$ failed: sign in to your home account again",
+    "placeholders": {
+      "action": { "content": "$1" }
+    }
+  },
+  "actionErrorNetwork": {
+    "message": "$ACTION$ failed: cannot reach your home instance",
+    "placeholders": {
+      "action": { "content": "$1" }
+    }
+  },
+  "actionErrorNotFound": {
+    "message": "$ACTION$ failed: the post was not found on your home instance",
+    "placeholders": {
+      "action": { "content": "$1" }
+    }
+  },
+  "actionErrorForbidden": {
+    "message": "$ACTION$ failed: your home account is not allowed to do this",
+    "placeholders": {
+      "action": { "content": "$1" }
+    }
+  },
+  "actionErrorRateLimited": {
+    "message": "$ACTION$ failed: too many requests, try again in a few minutes",
+    "placeholders": {
+      "action": { "content": "$1" }
+    }
+  },
+  "actionErrorFailed": {
+    "message": "$ACTION$ failed",
+    "placeholders": {
+      "action": { "content": "$1" }
+    }
+  }
+}

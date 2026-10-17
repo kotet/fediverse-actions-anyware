@@ -1,0 +1,224 @@
+{
+  "extensionName": {
+    "message": "Fediverse Actions Anyware"
+  },
+  "extensionDescription": {
+    "message": "他の Mastodon インスタンスの投稿に、自分のアカウントでお気に入り・ブースト・ブックマーク・返信ができます。"
+  },
+  "popupHomeAccountsHeading": {
+    "message": "ホームアカウント"
+  },
+  "popupEmptyAccountsMessage": {
+    "message": "登録済みのアカウントはありません。"
+  },
+  "popupShowAddAccountButton": {
+    "message": "アカウントを追加"
+  },
+  "popupAddAccountHeading": {
+    "message": "アカウントを追加"
+  },
+  "popupSoftwareLabel": {
+    "message": "種別"
+  },
+  "popupSoftwareMockOption": {
+    "message": "モック"
+  },
+  "popupSoftwareMastodonOption": {
+    "message": "Mastodon"
+  },
+  "popupInstanceLabel": {
+    "message": "インスタンス"
+  },
+  "popupCancelButton": {
+    "message": "戻る"
+  },
+  "popupSubmitButton": {
+    "message": "追加"
+  },
+  "oauthCallbackPageTitle": {
+    "message": "Fediverse Actions Anyware - 認証"
+  },
+  "oauthCallbackProcessing": {
+    "message": "認証処理中..."
+  },
+  "oauthCallbackDenied": {
+    "message": "認証が拒否されました: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "oauthCallbackCodeMissing": {
+    "message": "認証コードが見つかりません。"
+  },
+  "oauthCallbackStateMissing": {
+    "message": "認証の途中状態が見つかりません。もう一度お試しください。"
+  },
+  "oauthCallbackSucceeded": {
+    "message": "アカウントを追加しました。"
+  },
+  "oauthCallbackFailed": {
+    "message": "エラーが発生しました: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "unknownError": {
+    "message": "不明なエラー"
+  },
+  "authStateAuthenticated": {
+    "message": "認証済み"
+  },
+  "authStateUnauthenticated": {
+    "message": "未認証"
+  },
+  "accountActivateTitle": {
+    "message": "アクティブにする"
+  },
+  "accountRemoveTitle": {
+    "message": "削除"
+  },
+  "accountLoginButton": {
+    "message": "ログイン"
+  },
+  "accountReauthenticateButton": {
+    "message": "再認証"
+  },
+  "accountLogoutButton": {
+    "message": "ログアウト"
+  },
+  "popupActiveAccountNotUsable": {
+    "message": "アクティブなアカウントが未認証のため、ページにアクションボタンを表示しません。"
+  },
+  "popupNoHostAccess": {
+    "message": "ウェブサイト上で動作する権限がないため、どのページでも何も行いません。アドオンマネージャーから許可してください。"
+  },
+  "mastodonInstanceRequired": {
+    "message": "インスタンスのURLを入力してください。"
+  },
+  "mastodonOAuthStarted": {
+    "message": "Mastodon の認証ページを開きました。新しいタブで認証を完了してください。"
+  },
+  "mastodonOAuthError": {
+    "message": "Mastodon の認証開始中にエラーが発生しました: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "mockAccountLabel": {
+    "message": "モックアカウント $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "authStateError": {
+    "message": "エラー"
+  },
+  "actionLabelReply": {
+    "message": "返信"
+  },
+  "actionLabelFavourite": {
+    "message": "お気に入り"
+  },
+  "actionLabelBoost": {
+    "message": "ブースト"
+  },
+  "actionLabelBookmark": {
+    "message": "ブックマーク"
+  },
+  "actionButtonHomeAccountTitle": {
+    "message": "$ACTION$（ホームアカウントで実行）",
+    "placeholders": {
+      "action": {
+        "content": "$1"
+      }
+    }
+  },
+  "actionStateRunning": {
+    "message": "$ACTION$を実行中…",
+    "placeholders": {
+      "action": {
+        "content": "$1"
+      }
+    }
+  },
+  "actionStateSucceeded": {
+    "message": "$ACTION$をホームアカウントで実行しました",
+    "placeholders": {
+      "action": {
+        "content": "$1"
+      }
+    }
+  },
+  "actionStateUndone": {
+    "message": "$ACTION$をホームアカウントで取り消しました",
+    "placeholders": {
+      "action": {
+        "content": "$1"
+      }
+    }
+  },
+  "actionStateActive": {
+    "message": "$ACTION$済み（ホームアカウント）",
+    "placeholders": {
+      "action": {
+        "content": "$1"
+      }
+    }
+  },
+  "actionErrorUnauthenticated": {
+    "message": "$ACTION$に失敗しました: ホームアカウントに再ログインしてください",
+    "placeholders": {
+      "action": {
+        "content": "$1"
+      }
+    }
+  },
+  "actionErrorNetwork": {
+    "message": "$ACTION$に失敗しました: ホームインスタンスに接続できません",
+    "placeholders": {
+      "action": {
+        "content": "$1"
+      }
+    }
+  },
+  "actionErrorNotFound": {
+    "message": "$ACTION$に失敗しました: 投稿がホームインスタンスで見つかりません",
+    "placeholders": {
+      "action": {
+        "content": "$1"
+      }
+    }
+  },
+  "actionErrorForbidden": {
+    "message": "$ACTION$に失敗しました: ホームアカウントに権限がありません",
+    "placeholders": {
+      "action": {
+        "content": "$1"
+      }
+    }
+  },
+  "actionErrorRateLimited": {
+    "message": "$ACTION$に失敗しました: 回数制限に達しました。数分おいてからお試しください",
+    "placeholders": {
+      "action": {
+        "content": "$1"
+      }
+    }
+  },
+  "actionErrorFailed": {
+    "message": "$ACTION$に失敗しました",
+    "placeholders": {
+      "action": {
+        "content": "$1"
+      }
+    }
+  }
+}

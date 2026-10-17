@@ -1,0 +1,499 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { handleMastodonActionRequest } from "../src/background/mastodon-action-handler";
+import {
+  MastodonHomeAccount,
+  forgetRememberedResolutions,
+} from "../src/mastodon";
+
+/**
+ * Covers the split introduced because a content script cannot reach the home
+ * instance: the account object only sends requests, and the background handler
+ * is the only side that reads credentials and calls the API.
+ */
+
+const HOME_INSTANCE = "home.example";
+const POST_URL = "https://remote.example/@someone/1";
+const RESOLVED_STATUS_ID = "99";
+
+const MASTODON_ACCOUNT = {
+  id: "m1",
+  software: "mastodon",
+  label: "Home",
+  mastodonInstance: HOME_INSTANCE,
+};
+
+const RESOLVED_POST_URL = `https://${HOME_INSTANCE}/@someone@remote.example/${RESOLVED_STATUS_ID}`;
+
+interface FetchCall {
+  url: string;
+  method: string;
+  authorization: string | null;
+}
+
+let fetchCalls: FetchCall[];
+let createdTabUrls: string[];
+
+/**
+ * Serves the storage keys the handler reads, and fails any credential read
+ * attempted from elsewhere so a leak back into the content script is caught.
+ */
+function stubBackgroundStorage(storage: Record<string, unknown>): void {
+  createdTabUrls = [];
+  vi.stubGlobal("browser", {
+    storage: {
+      local: {
+        get: async (key: string) =>
+          key in storage ? { [key]: storage[key] } : {},
+      },
+    },
+    tabs: {
+      create: async ({ url }: { url: string }) => {
+        createdTabUrls.push(url);
+      },
+    },
+  });
+}
+
+/** The action state a Mastodon instance reports after each endpoint is called. */
+const ACTION_RESPONSE_STATES: Readonly<Record<string, Record<string, boolean>>> = {
+  favourite: { favourited: true },
+  unfavourite: { favourited: false },
+  reblog: { reblogged: true },
+  unreblog: { reblogged: false },
+  bookmark: { bookmarked: true },
+  unbookmark: { bookmarked: false },
+};
+
+/** How many times the status search was called, which the resolution cache changes. */
+function searchCallCount(): number {
+  return fetchCalls.filter((call) => call.url.includes("/api/v2/search")).length;
+}
+
+/**
+ * Answers the Mastodon endpoints the actions use and records every call.
+ *
+ * Action endpoints answer with the status as it stands afterwards, as the real
+ * ones do, so what the extension reports back can be traced to the instance.
+ *
+ * @param searchHit Whether the status search resolves the post on the home instance.
+ * @param actionStatus HTTP status answered to everything other than the search,
+ *   so that a failing action can be told apart from a failing resolution.
+ */
+function stubMastodonApi(searchHit: boolean, actionStatus = 200): void {
+  fetchCalls = [];
+  vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
+    const headers = (init?.headers ?? {}) as Record<string, string>;
+    fetchCalls.push({
+      url,
+      method: init?.method ?? "GET",
+      authorization: headers.Authorization ?? null,
+    });
+    const isSearch = url.includes("/api/v2/search");
+    const body = isSearch
+      ? {
+          statuses: searchHit
+            ? [
+                {
+                  id: RESOLVED_STATUS_ID,
+                  url: POST_URL,
+                  account: { acct: "someone@remote.example" },
+                },
+              ]
+            : [],
+        }
+      : {
+          id: RESOLVED_STATUS_ID,
+          url: POST_URL,
+          account: { acct: "someone@remote.example" },
+          ...(ACTION_RESPONSE_STATES[url.split("/").at(-1) ?? ""] ?? {}),
+        };
+    const status = isSearch ? 200 : actionStatus;
+    // `statusText` is left empty as Firefox reports it for an HTTP/2 response.
+    return { ok: status < 400, status, statusText: "", json: async () => body };
+  });
+}
+
+/**
+ * Answers the action endpoint with `actionResponse` whatever was asked of it, so
+ * that a state the extension reports can only have come from the instance.
+ */
+function stubMastodonApiAnswering(actionResponse: Record<string, unknown>): void {
+  fetchCalls = [];
+  vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
+    fetchCalls.push({
+      url,
+      method: init?.method ?? "GET",
+      authorization: null,
+    });
+    return {
+      ok: true,
+      status: 200,
+      statusText: "",
+      json: async () =>
+        url.includes("/api/v2/search")
+          ? {
+              statuses: [
+                {
+                  id: RESOLVED_STATUS_ID,
+                  url: POST_URL,
+                  account: { acct: "someone@remote.example" },
+                },
+              ],
+            }
+          : actionResponse,
+    };
+  });
+}
+
+beforeEach(() => {
+  // The background remembers where a post resolved to, so each test starts cold.
+  forgetRememberedResolutions();
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+describe("MastodonHomeAccount", () => {
+  let sendMessage: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    sendMessage = vi.fn().mockResolvedValue({ ok: true, active: true });
+    vi.stubGlobal("browser", {
+      runtime: { sendMessage },
+      storage: {
+        local: {
+          get: () => {
+            throw new Error("credentials must not be read outside the background");
+          },
+        },
+      },
+      tabs: { create: vi.fn() },
+    });
+    vi.stubGlobal("fetch", () => {
+      throw new Error("the home instance must not be contacted from here");
+    });
+  });
+
+  it.each([
+    [
+      "getAuthState",
+      (account: MastodonHomeAccount) => account.getAuthState(),
+      { type: "mastodon:get-auth-state", accountId: "m1" },
+    ],
+    [
+      "performAction",
+      (account: MastodonHomeAccount) =>
+        account.performAction("favourite", "apply", POST_URL),
+      {
+        type: "mastodon:perform-action",
+        accountId: "m1",
+        action: "favourite",
+        direction: "apply",
+        postUrl: POST_URL,
+      },
+    ],
+    [
+      "openPost",
+      (account: MastodonHomeAccount) => account.openPost(POST_URL),
+      { type: "mastodon:open-post", accountId: "m1", postUrl: POST_URL },
+    ],
+    [
+      "startResolvingPost",
+      (account: MastodonHomeAccount) => account.startResolvingPost(POST_URL),
+      {
+        type: "mastodon:start-resolving-post",
+        accountId: "m1",
+        postUrl: POST_URL,
+      },
+    ],
+  ])("%s はバックグラウンドへ依頼する", async (_name, call, expectedMessage) => {
+    await call(new MastodonHomeAccount("m1", HOME_INSTANCE));
+    expect(sendMessage).toHaveBeenCalledWith(expectedMessage);
+  });
+
+  it("バックグラウンドの応答をそのまま返す", async () => {
+    sendMessage.mockResolvedValue({
+      ok: false,
+      error: { kind: "not-found", message: "Post not found" },
+    });
+    const result = await new MastodonHomeAccount("m1", HOME_INSTANCE).performAction(
+      "boost",
+      "apply",
+      POST_URL,
+    );
+    expect(result).toEqual({
+      ok: false,
+      error: { kind: "not-found", message: "Post not found" },
+    });
+  });
+
+  it.each([
+    [
+      "performAction",
+      (account: MastodonHomeAccount) =>
+        account.performAction("favourite", "apply", POST_URL),
+    ],
+    ["openPost", (account: MastodonHomeAccount) => account.openPost(POST_URL)],
+  ])(
+    "バックグラウンドへ届かないときは %s が network ではなく failed を返す",
+    async (_name, call) => {
+      sendMessage.mockRejectedValue(new Error("Receiving end does not exist"));
+      const result = await call(new MastodonHomeAccount("m1", HOME_INSTANCE));
+      expect(result).toMatchObject({ ok: false, error: { kind: "failed" } });
+      // The instance was never contacted, so the message must not read like it was.
+      expect(result.ok ? "" : result.error.message).toContain("background");
+    },
+  );
+});
+
+describe("handleMastodonActionRequest", () => {
+  beforeEach(() => {
+    stubMastodonApi(true);
+    stubBackgroundStorage({
+      homeAccountStore: {
+        accounts: [MASTODON_ACCOUNT],
+        activeAccountId: "m1",
+      },
+      mastodonCredentials_m1: {
+        instance: HOME_INSTANCE,
+        clientId: "c",
+        clientSecret: "s",
+        redirectUri: "https://redirect.example/",
+        accessToken: "token",
+      },
+    });
+  });
+
+  it.each([
+    ["favourite", "apply", "favourite", true],
+    ["favourite", "undo", "unfavourite", false],
+    ["boost", "apply", "reblog", true],
+    ["boost", "undo", "unreblog", false],
+    ["bookmark", "apply", "bookmark", true],
+    ["bookmark", "undo", "unbookmark", false],
+  ] as const)(
+    "%s の %s は解決した投稿の %s を叩き、結果の状態を返す",
+    async (action, direction, path, expectedActive) => {
+      const result = await handleMastodonActionRequest({
+        type: "mastodon:perform-action",
+        accountId: "m1",
+        action,
+        direction,
+        postUrl: POST_URL,
+      });
+      expect(result).toEqual({ ok: true, active: expectedActive });
+      expect(fetchCalls.at(-1)).toEqual({
+        url: `https://${HOME_INSTANCE}/api/v1/statuses/${RESOLVED_STATUS_ID}/${path}`,
+        method: "POST",
+        authorization: "Bearer token",
+      });
+    },
+  );
+
+  it.each([
+    [
+      "インスタンスの報告を優先する",
+      "undo",
+      { id: RESOLVED_STATUS_ID, favourited: true },
+      true,
+    ],
+    [
+      "報告が無ければ依頼した向きを使う",
+      "apply",
+      { id: RESOLVED_STATUS_ID },
+      true,
+    ],
+  ] as const)("成功後の状態は %s", async (_name, direction, answer, expected) => {
+    stubMastodonApiAnswering(answer);
+    const result = await handleMastodonActionRequest({
+      type: "mastodon:perform-action",
+      accountId: "m1",
+      action: "favourite",
+      direction,
+      postUrl: POST_URL,
+    });
+    expect(result).toEqual({ ok: true, active: expected });
+  });
+
+  it("一度解決した投稿は取り消しのときに再検索しない", async () => {
+    await handleMastodonActionRequest({
+      type: "mastodon:perform-action",
+      accountId: "m1",
+      action: "favourite",
+      direction: "apply",
+      postUrl: POST_URL,
+    });
+    await handleMastodonActionRequest({
+      type: "mastodon:perform-action",
+      accountId: "m1",
+      action: "favourite",
+      direction: "undo",
+      postUrl: POST_URL,
+    });
+    expect(searchCallCount()).toBe(1);
+  });
+
+  it("押し下げでの先行解決と重なってもクリックは解決をやり直さない", async () => {
+    const preparing = handleMastodonActionRequest({
+      type: "mastodon:start-resolving-post",
+      accountId: "m1",
+      postUrl: POST_URL,
+    });
+    const acting = handleMastodonActionRequest({
+      type: "mastodon:perform-action",
+      accountId: "m1",
+      action: "favourite",
+      direction: "apply",
+      postUrl: POST_URL,
+    });
+    const [, result] = await Promise.all([preparing, acting]);
+    expect(result).toEqual({ ok: true, active: true });
+    expect(searchCallCount()).toBe(1);
+  });
+
+  it("リクエストではなく保存された設定のインスタンスへ送信する", async () => {
+    await handleMastodonActionRequest({
+      type: "mastodon:perform-action",
+      accountId: "m1",
+      action: "favourite",
+      direction: "apply",
+      postUrl: POST_URL,
+    });
+    expect(fetchCalls.every((call) => call.url.startsWith(`https://${HOME_INSTANCE}/`))).toBe(true);
+  });
+
+  it("ホームインスタンス上に投稿が見つからなければ not-found を返す", async () => {
+    stubMastodonApi(false);
+    const result = await handleMastodonActionRequest({
+      type: "mastodon:perform-action",
+      accountId: "m1",
+      action: "favourite",
+      direction: "apply",
+      postUrl: POST_URL,
+    });
+    expect(result).toEqual({
+      ok: false,
+      error: { kind: "not-found", message: "Post not found" },
+    });
+  });
+
+  it("トークンが無ければ通信せずに unauthenticated を返す", async () => {
+    stubBackgroundStorage({
+      homeAccountStore: { accounts: [MASTODON_ACCOUNT], activeAccountId: "m1" },
+    });
+    const result = await handleMastodonActionRequest({
+      type: "mastodon:perform-action",
+      accountId: "m1",
+      action: "favourite",
+      direction: "apply",
+      postUrl: POST_URL,
+    });
+    expect(result).toEqual({
+      ok: false,
+      error: { kind: "unauthenticated", message: "Not authenticated" },
+    });
+    expect(fetchCalls).toEqual([]);
+  });
+
+  it.each([
+    ["未登録のアカウント", "unknown"],
+    ["Mastodon ではないアカウント", "mock-1"],
+  ])("%s の依頼は通信せずに失敗する", async (_name, accountId) => {
+    stubBackgroundStorage({
+      homeAccountStore: {
+        accounts: [MASTODON_ACCOUNT, { id: "mock-1", software: "mock", label: "Mock" }],
+        activeAccountId: "m1",
+      },
+    });
+    const result = await handleMastodonActionRequest({
+      type: "mastodon:perform-action",
+      accountId,
+      action: "favourite",
+      direction: "apply",
+      postUrl: POST_URL,
+    });
+    expect(result).toMatchObject({ ok: false, error: { kind: "failed" } });
+    expect(fetchCalls).toEqual([]);
+  });
+
+  it.each([
+    ["トークンがあれば", "token", "authenticated"],
+    ["トークンが無ければ", undefined, "unauthenticated"],
+  ])("認証状態は %s %s", async (_name, accessToken, expected) => {
+    stubBackgroundStorage({
+      homeAccountStore: { accounts: [MASTODON_ACCOUNT], activeAccountId: "m1" },
+      mastodonCredentials_m1: {
+        instance: HOME_INSTANCE,
+        clientId: "c",
+        clientSecret: "s",
+        redirectUri: "https://redirect.example/",
+        accessToken,
+      },
+    });
+    expect(
+      await handleMastodonActionRequest({
+        type: "mastodon:get-auth-state",
+        accountId: "m1",
+      }),
+    ).toBe(expected);
+  });
+
+  it.each([
+    [401, "unauthenticated"],
+    [403, "forbidden"],
+    [404, "not-found"],
+    [500, "network"],
+    [429, "rate-limited"],
+    [418, "failed"],
+  ])("HTTP %i は %s として報告される", async (status, kind) => {
+    stubMastodonApi(true, status);
+    const result = await handleMastodonActionRequest({
+      type: "mastodon:perform-action",
+      accountId: "m1",
+      action: "favourite",
+      direction: "apply",
+      postUrl: POST_URL,
+    });
+    expect(result).toMatchObject({ ok: false, error: { kind } });
+  });
+
+  it("応答が返らない通信は network として報告される", async () => {
+    vi.stubGlobal("fetch", async () => {
+      throw new TypeError("NetworkError when attempting to fetch resource.");
+    });
+    const result = await handleMastodonActionRequest({
+      type: "mastodon:perform-action",
+      accountId: "m1",
+      action: "favourite",
+      direction: "apply",
+      postUrl: POST_URL,
+    });
+    expect(result).toMatchObject({ ok: false, error: { kind: "network" } });
+  });
+
+  it("解決した投稿をホームインスタンス上で開く", async () => {
+    const result = await handleMastodonActionRequest({
+      type: "mastodon:open-post",
+      accountId: "m1",
+      postUrl: POST_URL,
+    });
+    // Opening a tab leaves no state on the post to report.
+    expect(result).toEqual({ ok: true, active: null });
+    expect(createdTabUrls).toEqual([RESOLVED_POST_URL]);
+  });
+
+  it("解決できないときはタブを開かず失敗を返す", async () => {
+    stubMastodonApi(false);
+    const result = await handleMastodonActionRequest({
+      type: "mastodon:open-post",
+      accountId: "m1",
+      postUrl: POST_URL,
+    });
+    expect(result).toEqual({
+      ok: false,
+      error: { kind: "not-found", message: "Post not found" },
+    });
+    expect(createdTabUrls).toEqual([]);
+  });
+});

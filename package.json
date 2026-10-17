@@ -1,0 +1,28 @@
+{
+  "name": "fediverse-actions-anyware",
+  "version": "0.1.0",
+  "description": "Favourite, boost, bookmark and reply to posts on other Mastodon instances with your own account.",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kotet/fediverse-actions-anyware.git"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@types/firefox-webext-browser": "^143.0.0",
+    "@types/node": "^26.0.1",
+    "esbuild": "^0.28.1",
+    "happy-dom": "^20.10.6",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9",
+    "web-ext": "10.7.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true
+  }
+}
