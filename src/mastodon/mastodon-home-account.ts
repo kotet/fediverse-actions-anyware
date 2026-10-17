@@ -95,6 +95,13 @@ export class MastodonHomeAccount implements HomeAccount {
    * A registration is only good for the instance and redirect it was made
    * against, so one made for either of those being different is replaced —
    * along with the token that came from it.
+   *
+   * Whether the instance still has the registration is not checked. Mastodon does
+   * not delete registrations on its own; revoking the app from its settings only
+   * revokes the tokens. Losing one takes something like an administrator deleting
+   * it, and the authorization page then stops with `invalid_client` instead of
+   * redirecting back, so nothing here learns of it. Removing the account and
+   * adding it again registers afresh.
    */
   private async appRegistration(redirectUri: string): Promise<MastodonApp> {
     const stored = await loadMastodonCredentials(this.accountId);
