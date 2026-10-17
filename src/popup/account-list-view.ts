@@ -4,6 +4,7 @@ import {
   type HomeAccountConfig,
   type HomeAccountStoreState,
   loadAccountStore,
+  onAccountStoreChanged,
   setActiveAccount,
 } from "../core";
 import { getMessage, type MessageKey } from "../i18n";
@@ -74,25 +75,72 @@ function showNotice(message: string, isError: boolean): void {
   notice.classList.toggle("hidden", message === "");
 }
 
-/** Reloads the store and re-renders. Used after anything that changes an account. */
-export async function refreshAccountList(): Promise<void> {
-  await renderAccountList(await loadAccountStore());
+/**
+ * Draws the list and keeps it in step with the account store from then on.
+ *
+ * A Mastodon account is only registered once the OAuth tab reaches the callback
+ * page, which is another realm and finishes while the popup is already open, so
+ * the store is watched rather than re-read only after the popup's own actions.
+ * Those actions rely on the same subscription: refreshing after them as well
+ * would render every change twice.
+ *
+ * @returns The first render.
+ */
+export async function setupAccountListView(): Promise<void> {
+  onAccountStoreChanged(() => {
+    void refreshAccountList();
+  });
+  await refreshAccountList();
 }
 
 /**
- * Re-renders the account list based on the store state.
+ * Counts the renders started so far, so that a render can tell whether a later
+ * one has started while it was waiting.
  *
- * @param state The current store state.
+ * Each render waits on storage and on the background before touching the list,
+ * so two changes in quick succession, such as switching the active account twice,
+ * could otherwise finish out of order and leave the earlier state on screen.
  */
-async function renderAccountList(state: HomeAccountStoreState): Promise<void> {
+let renderGeneration = 0;
+
+/**
+ * Reloads the store and re-renders the account list.
+ *
+ * Changes to the store are picked up by the subscription in setupAccountListView;
+ * this is called directly only for what the store does not record.
+ */
+export async function refreshAccountList(): Promise<void> {
+  renderGeneration += 1;
+  const generation = renderGeneration;
+
+  // Everything is collected before anything is drawn, so the list is not shown
+  // with the states missing and then filled in under the user's eyes.
+  const state = await loadAccountStore();
+  const authStates = await Promise.all(state.accounts.map(readAuthState));
+  const hostAccess = await hasHostAccess();
+  // A render started later has read a newer store and has the final say.
+  if (generation !== renderGeneration) {
+    return;
+  }
+  drawAccountList(state, authStates, hostAccess);
+}
+
+/**
+ * Replaces the account list and the notice above it.
+ *
+ * @param state The store state to show.
+ * @param authStates The authentication state of each account in `state.accounts`, in the same order.
+ * @param hostAccess Whether the extension may still act on the pages it is loaded into.
+ */
+function drawAccountList(
+  state: HomeAccountStoreState,
+  authStates: readonly AuthState[],
+  hostAccess: boolean,
+): void {
   const list = document.getElementById("account-list") as HTMLUListElement;
   const emptyMessage = document.getElementById(
     "empty-message",
   ) as HTMLParagraphElement;
-
-  // Collected before anything is drawn, so the list is not shown with the states
-  // missing and then filled in under the user's eyes.
-  const authStates = await Promise.all(state.accounts.map(readAuthState));
 
   list.replaceChildren();
   emptyMessage.classList.toggle("hidden", state.accounts.length > 0);
@@ -118,7 +166,7 @@ async function renderAccountList(state: HomeAccountStoreState): Promise<void> {
 
   // Host access comes first: without it nothing runs on the page at all, which
   // would make the account's own state beside the point.
-  if (!(await hasHostAccess())) {
+  if (!hostAccess) {
     showNotice(getMessage("popupNoHostAccess"), true);
   } else {
     showNotice(isBlocked ? getMessage("popupActiveAccountNotUsable") : "", false);
@@ -147,7 +195,7 @@ function createAccountItem(
   radio.checked = isActive;
   radio.title = getMessage("accountActivateTitle");
   radio.addEventListener("change", () => {
-    void setActiveAccount(account.id).then(refreshAccountList);
+    void setActiveAccount(account.id);
   });
 
   const body = document.createElement("div");
@@ -169,7 +217,7 @@ function createAccountItem(
   removeButton.textContent = "✕";
   removeButton.title = getMessage("accountRemoveTitle");
   removeButton.addEventListener("click", () => {
-    void removeHomeAccount(account).then(refreshAccountList);
+    void removeHomeAccount(account);
   });
 
   item.append(radio, body, removeButton);

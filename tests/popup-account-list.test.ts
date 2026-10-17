@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { handleMastodonActionRequest } from "../src/background/mastodon-action-handler";
 import type { MastodonActionRequest } from "../src/mastodon";
-import { refreshAccountList } from "../src/popup/account-list-view";
+import {
+  refreshAccountList,
+  setupAccountListView,
+} from "../src/popup/account-list-view";
 
 /**
  * Covers what the popup says about an account and what its controls do to what is
@@ -31,9 +34,17 @@ const CREDENTIALS = {
   accessToken: "token",
 };
 
+type StorageListener = (
+  changes: Record<string, { newValue?: unknown }>,
+  areaName: string,
+) => void;
+
 let storage: Record<string, unknown>;
+let storageListeners: StorageListener[];
 /** Set to make the background unreachable, as it is while the extension reloads. */
 let backgroundReachable: boolean;
+/** Set to hold every answer from the background until it resolves. */
+let backgroundGate: Promise<void> | null;
 /** The origins the extension holds, which the user can withdraw under MV3. */
 let grantedOrigins: string[];
 
@@ -73,6 +84,12 @@ function notice(): HTMLElement {
   return element;
 }
 
+function notifyStorageListeners(
+  changes: Record<string, { newValue?: unknown }>,
+): void {
+  for (const listener of storageListeners) listener(changes, "local");
+}
+
 /** Puts `accounts` in the store with the first one active. */
 function storeAccounts(accounts: readonly unknown[]): void {
   storage.homeAccountStore = {
@@ -84,7 +101,9 @@ function storeAccounts(accounts: readonly unknown[]): void {
 describe("ポップアップのアカウント一覧", () => {
   beforeEach(() => {
     storage = {};
+    storageListeners = [];
     backgroundReachable = true;
+    backgroundGate = null;
     grantedOrigins = ["<all_urls>"];
     setupPopupMarkup();
     vi.stubGlobal("browser", {
@@ -94,18 +113,29 @@ describe("ポップアップのアカウント一覧", () => {
             key in storage ? { [key]: storage[key] } : {},
           set: async (items: Record<string, unknown>) => {
             Object.assign(storage, items);
+            notifyStorageListeners(
+              Object.fromEntries(
+                Object.entries(items).map(([key, value]) => [key, { newValue: value }]),
+              ),
+            );
           },
           remove: async (key: string) => {
             delete storage[key];
+            notifyStorageListeners({ [key]: {} });
           },
         },
-        onChanged: { addListener: () => {} },
+        onChanged: {
+          addListener: (listener: StorageListener) => {
+            storageListeners.push(listener);
+          },
+        },
       },
       runtime: {
         sendMessage: async (message: MastodonActionRequest) => {
           if (!backgroundReachable) {
             throw new Error("Receiving end does not exist");
           }
+          if (backgroundGate !== null) await backgroundGate;
           return await handleMastodonActionRequest(message);
         },
         getURL: (path: string) => `moz-extension://test/${path}`,
@@ -206,10 +236,39 @@ describe("ポップアップのアカウント一覧", () => {
     });
   });
 
+  it("アクティブなアカウントを切り替えると一覧に反映する", async () => {
+    storeAccounts([MASTODON_ACCOUNT, MOCK_ACCOUNT]);
+    await setupAccountListView();
+
+    accountItems()[1]?.querySelector<HTMLInputElement>(".account-radio")?.click();
+
+    await vi.waitFor(() => {
+      expect(accountItems().map((item) => item.classList.contains("active"))).toEqual(
+        [false, true],
+      );
+    });
+  });
+
+  it("後から始まった描画の結果を、先に始まった描画で上書きしない", async () => {
+    storeAccounts([MASTODON_ACCOUNT]);
+    let releaseBackground = (): void => {};
+    backgroundGate = new Promise((resolve) => {
+      releaseBackground = resolve;
+    });
+    const earlierRender = refreshAccountList();
+
+    storeAccounts([]);
+    await refreshAccountList();
+    releaseBackground();
+    await earlierRender;
+
+    expect(accountItems()).toHaveLength(0);
+  });
+
   it("アカウントを削除すると資格情報も残さない", async () => {
     storeAccounts([MASTODON_ACCOUNT]);
     storage[CREDENTIALS_KEY] = CREDENTIALS;
-    await refreshAccountList();
+    await setupAccountListView();
 
     accountItems()[0]?.querySelector<HTMLButtonElement>(".account-remove")?.click();
 
@@ -224,7 +283,7 @@ describe("ポップアップのアカウント一覧", () => {
     // flag is fixed at compile time, so a Mastodon account missing its instance
     // stands in for it.
     storeAccounts([{ id: "m2", software: "mastodon", label: "broken" }]);
-    await refreshAccountList();
+    await setupAccountListView();
 
     accountItems()[0]?.querySelector<HTMLButtonElement>(".account-remove")?.click();
 
