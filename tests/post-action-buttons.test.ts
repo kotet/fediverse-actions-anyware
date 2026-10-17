@@ -166,7 +166,7 @@ describe("buildActionButtons", () => {
       "favourite",
     ).onClick("apply");
 
-    // What the content script does when the active account is switched.
+    // What the content script does whenever the extension's storage changes.
     stateMemory.forgetAll();
     expect(
       buttonFor(buildActionButtons(account, post, stateMemory), "favourite")

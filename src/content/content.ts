@@ -44,9 +44,6 @@ const pageAdapter = new MastodonPageAdapter();
  */
 const postActionStates = new PostActionStateMemory();
 
-/** Which account the states above were produced by, so a switch can clear them. */
-let accountOfPostActionStates: string | null = null;
-
 let rerenderTimer: ReturnType<typeof setTimeout> | undefined;
 
 /**
@@ -165,13 +162,6 @@ async function renderActionButtons(): Promise<void> {
     return;
   }
 
-  // What one account has favourited is not what the next one has, so the states
-  // shown on the buttons do not survive a switch of the active account.
-  if (displayable !== null && displayable.id !== accountOfPostActionStates) {
-    postActionStates.forgetAll();
-    accountOfPostActionStates = displayable.id;
-  }
-
   const renderMode = new ReplaceUnderlineButtonRenderMode(pageAdapter);
   const posts = pageAdapter.extractPosts();
   logStatusChange(`[content] Extracted ${posts.length} post(s).`);
@@ -211,7 +201,15 @@ if (pageAdapter.isSupportedPage()) {
 // and whether buttons may be shown depends on those just as much. Which keys hold
 // them is known only to each account implementation, and the extension writes to
 // storage rarely enough that listening to all of it costs nothing noticeable.
+//
+// The remembered states go with every such change. What one user has favourited
+// is not what the next one has, and the user acting can change without the
+// account's id changing: signing in again on the same account may sign in as
+// someone else. Telling that apart from writes that leave the user as it was
+// would take knowing what each account stores, while forgetting too much only
+// shows a post as not acted on, the same as after a reload.
 browser.storage.onChanged.addListener((_changes, areaName) => {
   if (areaName !== "local") return;
+  postActionStates.forgetAll();
   void renderActionButtons();
 });

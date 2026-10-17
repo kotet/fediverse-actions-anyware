@@ -33,9 +33,9 @@ export class PostActionStateMemory {
   /**
    * Drops everything remembered.
    *
-   * What is kept here is true of one account only — a post the previous account
-   * had favourited says nothing about the next one — so the caller empties this
-   * when the account the states came from is no longer the one acting.
+   * What is kept here is true of one user only: a post the previous user had
+   * favourited says nothing about the next one. The caller empties this whenever
+   * the user acting may have changed.
    */
   forgetAll(): void {
     this.activeActions.clear();

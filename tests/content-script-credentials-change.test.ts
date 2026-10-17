@@ -10,6 +10,14 @@ function placedKinds(): string[] {
   );
 }
 
+function favouriteIsShownActive(): boolean {
+  return (
+    document
+      .querySelector('[data-faa-action="favourite"]')
+      ?.hasAttribute("data-faa-active") ?? false
+  );
+}
+
 function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -58,7 +66,12 @@ describe("認証情報の変更によるコンテンツスクリプトの再描�
           },
         },
       },
-      runtime: { sendMessage: async () => authState },
+      runtime: {
+        sendMessage: async (request: { type: string }) =>
+          request.type === "mastodon:get-auth-state"
+            ? authState
+            : { ok: true, active: true },
+      },
       i18n: { getMessage: (key: string) => key },
     });
     document.body.innerHTML = APP_SHELL + renderedStatusPage;
@@ -80,5 +93,16 @@ describe("認証情報の変更によるコンテンツスクリプトの再描�
     changeCredentials("authenticated");
     await wait(RENDER_SETTLE_MS);
     expect(placedKinds().length).toBeGreaterThan(0);
+  });
+
+  it("認証済みのまま認証情報が変わると実行済みの表示を捨てる", async () => {
+    document.querySelector<HTMLElement>('[data-faa-action="favourite"]')?.click();
+    await wait(RENDER_SETTLE_MS);
+    expect(favouriteIsShownActive()).toBe(true);
+
+    // Signing in again, possibly as someone else, without logging out first.
+    changeCredentials("authenticated");
+    await wait(RENDER_SETTLE_MS);
+    expect(favouriteIsShownActive()).toBe(false);
   });
 });
