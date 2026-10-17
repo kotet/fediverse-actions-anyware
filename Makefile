@@ -1,4 +1,4 @@
-.PHONY: build build-release lint typecheck test
+.PHONY: build build-release source-archive lint typecheck test
 
 run: build
 	web-ext run --source-dir dist
@@ -10,6 +10,9 @@ build:
 build-release:
 	node build.mjs --release
 	web-ext build --source-dir dist-release --artifacts-dir web-ext-artifacts/release --overwrite-dest
+
+source-archive:
+	node scripts/build-source-archive.mjs
 
 lint: build build-release
 	node scripts/check-i18n.mjs

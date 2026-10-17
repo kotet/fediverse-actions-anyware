@@ -12,7 +12,7 @@
     "type": "git",
     "url": "git+https://github.com/kotet/fediverse-actions-anyware.git"
   },
-  "license": "MIT",
+  "license": "MPL-2.0",
   "devDependencies": {
     "@types/firefox-webext-browser": "^143.0.0",
     "@types/node": "^26.0.1",

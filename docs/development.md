@@ -10,6 +10,7 @@
 |--------|------|------|
 | `make build` | 開発用ビルド。TypeScript のコンパイルと `dist/` への出力 | esbuild + 静的ファイルコピー。モック実装を含む |
 | `make build-release` | 公開用ビルド。`dist-release/` へ出力し、AMO に提出する zip を `web-ext-artifacts/release/` に作る | モック実装を含まない（ポップアップに `Mock` の選択肢が出ない） |
+| `make source-archive` | AMO に提出するソースコードの zip を `web-ext-artifacts/release/` に作る | `git archive` で HEAD のコミット済みファイルだけを固める。追跡中のファイルに未コミットの変更があると失敗する |
 | `make lint` | マニフェストやコードの静的検証 | `make build` と `make build-release` を内包し、両方を lint する。エラー 0 を目指す |
 | `make typecheck` | TypeScript の型チェックのみ | ビルドせず型エラーだけ確認 |
 | firefox-devtools MCP | Firefox の操作・拡張機能のインストール | Claude Code から直接操作できる |
