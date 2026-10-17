@@ -16,8 +16,8 @@ import { MastodonPageAdapter } from "../page-adapters";
 /**
  * Content script orchestration.
  *
- * Wires up the design flow of "skip pages whose own client is signed in → get
- * active account → check auth → extract posts via page adapter → render via
+ * Wires up the design flow of "skip pages whose own client is signed in -> get
+ * active account -> check auth -> extract posts via page adapter -> render via
  * button render mode".
  *
  * The adapter is fixed to Mastodon and the render mode to "replace-underline" for
@@ -140,8 +140,8 @@ async function renderActionButtons(): Promise<void> {
 
   // On a page its own client is signed in to, that client's action buttons
   // already act as the signed-in account. Substituting them would replace
-  // working buttons with ones that take the long way round — resolving the post
-  // through the search API before acting on it — and would act as the active
+  // working buttons with ones that take the long way round (resolving the post
+  // through the search API before acting on it) and would act as the active
   // account even when that is a different one. Nothing is gained, so the
   // extension stays out of the way entirely. Asked before the store is read
   // because it costs one lookup in the page and no storage access. Unlike the

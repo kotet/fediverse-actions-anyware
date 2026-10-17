@@ -26,8 +26,8 @@ const ACTIVE_ATTRIBUTE = "data-faa-active";
  * Pointer events swallowed on a substituted button.
  *
  * The substitute carries no host listeners of its own, but the host page may have
- * delegated handlers on an ancestor — Mastodon opens the post detail when a status
- * is clicked — so propagation is stopped for the whole press sequence.
+ * delegated handlers on an ancestor (Mastodon opens the post detail when a status
+ * is clicked), so propagation is stopped for the whole press sequence.
  */
 const SWALLOWED_EVENT_TYPES: readonly string[] = ["mousedown", "mouseup", "click"];
 
@@ -49,9 +49,9 @@ const SUCCESS_MESSAGE_MS = 4000;
 /**
  * The wording for each failure.
  *
- * The underline shows only that something failed, so which of the kinds it was —
- * and therefore whether the remedy is re-authenticating, waiting, or nothing the
- * user can do — is said here or nowhere.
+ * The underline shows only that something failed, so which of the kinds it was
+ * (and therefore whether the remedy is re-authenticating, waiting, or nothing the
+ * user can do) is said here or nowhere.
  */
 const ERROR_MESSAGE_KEYS: Readonly<Record<ActionErrorKind, MessageKey>> = {
   unauthenticated: "actionErrorUnauthenticated",
@@ -68,7 +68,7 @@ const ERROR_MESSAGE_KEYS: Readonly<Record<ActionErrorKind, MessageKey>> = {
  * The look is carried by two attributes that `content.css` selects on, rather than
  * by inline styles: {@link PROGRESS_ATTRIBUTE} for how a click is going and
  * {@link ACTIVE_ATTRIBUTE} for whether the action is in effect on the post. They
- * are separate because they are independent — a button that is already active can
+ * are separate because they are independent: a button that is already active can
  * be running again.
  *
  * Everything the underline cannot distinguish goes into `title` / `aria-label`:
@@ -83,8 +83,8 @@ const ERROR_MESSAGE_KEYS: Readonly<Record<ActionErrorKind, MessageKey>> = {
  * idempotent, so acting on a post that was already in that state does no harm and
  * the answer brings the display in line.
  *
- * Nothing here adds or removes nodes, so the content script's `MutationObserver` —
- * which watches `childList` alone — is not woken by showing a result.
+ * Nothing here adds or removes nodes, so the content script's `MutationObserver`,
+ * which watches `childList` alone, is not woken by showing a result.
  */
 class ActionButtonStateDisplay {
   private readonly button: HTMLElement;

@@ -92,7 +92,7 @@ export class MastodonHomeAccount implements HomeAccount {
    * much.
    *
    * A registration is only good for the instance and redirect it was made
-   * against, so one made for either of those being different is replaced —
+   * against, so one made for either of those being different is replaced,
    * along with the token that came from it.
    *
    * Whether the instance still has the registration is not checked. Mastodon does

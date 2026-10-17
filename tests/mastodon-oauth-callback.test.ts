@@ -8,7 +8,7 @@ import { MastodonHomeAccount, startMastodonOAuth } from "../src/mastodon";
  * from the row of an account that is already registered.
  *
  * The callback page is a page rather than a function, so it is driven the way the
- * redirect drives it — by loading the module with the code in the query string —
+ * redirect drives it (by loading the module with the code in the query string),
  * and the instance it talks to is a stubbed `fetch`.
  */
 

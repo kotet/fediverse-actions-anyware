@@ -49,7 +49,7 @@
 
 /*
  * State display for an action (spec 3.8). The underline is the only thing these
- * buttons can carry — they show an icon and no text of their own — so the four
+ * buttons can carry (they show an icon and no text of their own), so the four
  * looks below are distinguished by line weight and pattern as well as by color,
  * and the wording that names the exact state lives in title / aria-label.
  *
@@ -58,7 +58,7 @@
  * restates every property the others change, so no look leaks into another.
  */
 
-/* Active — the action is in effect. Heavier than the resting underline. */
+/* Active: the action is in effect. Heavier than the resting underline. */
 .faa-button[data-faa-active]::after {
   height: 4px !important;
   border-radius: 2px !important;
@@ -67,7 +67,7 @@
 }
 
 /*
- * Running — deliberately not a result color. Broken into moving dashes so it reads
+ * Running: deliberately not a result color. Broken into moving dashes so it reads
  * as "still going" rather than as an outcome.
  */
 .faa-button[data-faa-state="running"]::after {
@@ -96,7 +96,7 @@
   }
 }
 
-/* Failed — dots rather than dashes, so the pattern differs from running too. */
+/* Failed: dots rather than dashes, so the pattern differs from running too. */
 .faa-button[data-faa-state="failed"]::after {
   height: 2px !important;
   border-radius: 0 !important;

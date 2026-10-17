@@ -9,8 +9,8 @@ function stateKey(postUrl: string, action: PostActionKind): string {
  * Remembers which actions this extension has put into effect on which posts.
  *
  * The buttons that show those states are built from scratch on every render, and
- * the host client re-renders on its own often enough — relative timestamps alone
- * see to that — that a button which has just been used is regularly replaced. What
+ * the host client re-renders on its own often enough (relative timestamps alone
+ * see to that) that a button which has just been used is regularly replaced. What
  * an action left on the post outlives its button, so it is kept here and restored,
  * rather than falling back to "not in effect" and telling the user something
  * untrue about a post they just favourited.
@@ -19,7 +19,7 @@ function stateKey(postUrl: string, action: PostActionKind): string {
  * costs no more than a second click.
  *
  * Nothing is written to storage. A page that is reloaded starts with every button
- * inactive, the same as any post that has not been acted on in this tab — which is
+ * inactive, the same as any post that has not been acted on in this tab. That is
  * what the decision not to fetch the state beforehand already means.
  */
 export class PostActionStateMemory {

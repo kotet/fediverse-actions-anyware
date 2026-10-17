@@ -30,8 +30,8 @@ const DISABLED_CLASS = "disabled";
  *
  * Its own client sets it the same way for every action (`icon-button.tsx` builds
  * the class list from an `active` prop), and the color that follows comes from the
- * stylesheet alone — `.icon-button.star-icon.active`, `.bookmark-icon.active`, and
- * `.icon-button.active` for the rest — so a substituted button carrying the class
+ * stylesheet alone (`.icon-button.star-icon.active`, `.bookmark-icon.active`, and
+ * `.icon-button.active` for the rest), so a substituted button carrying the class
  * takes on the client's own look with nothing else to copy.
  */
 const ACTIVE_CLASS = "active";
@@ -50,7 +50,7 @@ const INITIAL_STATE_ELEMENT_ID = "initial-state";
  * and the client derives `signedIn` from nothing else (`identity_context.tsx`).
  *
  * @returns The account id, or `null` when the payload is absent, unreadable, or
- *   carries no account — all of which are answered as "not signed in".
+ *   carries no account, all of which are answered as "not signed in".
  */
 function viewerAccountId(payload: string): string | null {
   let state: unknown;
@@ -136,7 +136,7 @@ export class MastodonPageAdapter implements PageAdapter, ActionButtonReplacer {
   extractPosts(): ExtractedPost[] {
     const posts: ExtractedPost[] = [];
 
-    // Main (detailed) status — appears once at the top of a status page.
+    // Main (detailed) status: appears once at the top of a status page.
     const detailedWrapper = document.querySelector(".detailed-status__wrapper");
     if (detailedWrapper instanceof HTMLElement) {
       const urlLink = detailedWrapper.querySelector(".detailed-status__datetime");

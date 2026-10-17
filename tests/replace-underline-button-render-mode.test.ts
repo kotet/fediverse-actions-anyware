@@ -18,7 +18,7 @@ const HOST_ACTIVE_CLASS = "host-active";
  * Stands in for a page adapter's button replacement capability.
  *
  * Returns plain buttons instead of clones of real markup, which keeps this suite
- * free of any host page fixture — site-specific behavior is covered by the adapter's
+ * free of any host page fixture. Site-specific behavior is covered by the adapter's
  * own tests.
  */
 class FakeActionButtonReplacer implements ActionButtonReplacer {

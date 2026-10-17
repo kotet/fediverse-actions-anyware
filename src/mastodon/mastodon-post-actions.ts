@@ -43,8 +43,8 @@ interface ResolvedStatus {
 }
 
 /**
- * Resolutions already made, so acting on the same post again — undoing what was
- * just done, most of all — costs one round trip instead of two.
+ * Resolutions already made, so acting on the same post again (undoing what was
+ * just done, most of all) costs one round trip instead of two.
  *
  * Only identity is kept, never the action state fields the same response carries:
  * those go stale, whereas where a post lives on the instance does not. The map is

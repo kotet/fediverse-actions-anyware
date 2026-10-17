@@ -12,7 +12,7 @@ import { resolve } from "path";
  * Server-delivered markup of a Mastodon status page.
  *
  * Verified against the live site: the response carries the app shell and nothing
- * else — no action bar, and an `initial-state` payload with no status in it. The
+ * else: no action bar, and an `initial-state` payload with no status in it. The
  * client has to fetch the status before any post markup exists, which is always
  * after the content script runs.
  */

@@ -101,7 +101,7 @@ export function setupAddAccountView(callbacks: AddAccountViewCallbacks): void {
     try {
       const accountId = crypto.randomUUID();
       await startMastodonOAuth(instance, accountId);
-      // OAuth tab opened — popup will remain open but user switches to the OAuth tab.
+      // OAuth tab opened. The popup will remain open but the user switches to the OAuth tab.
       // The callback page handles account creation; popup updates via storage change listener.
       errorMessage.textContent = getMessage("mastodonOAuthStarted");
       errorMessage.classList.remove("hidden");
