@@ -2,6 +2,7 @@ import {
   PostActionStateMemory,
   buildActionButtons,
   createHomeAccount,
+  sendToolbarIconRequest,
 } from "../app";
 import { ReplaceUnderlineButtonRenderMode } from "../button-render-modes";
 import {
@@ -18,7 +19,8 @@ import { MastodonPageAdapter } from "../page-adapters";
  *
  * Wires up the design flow of "skip pages whose own client is signed in -> get
  * active account -> check auth -> extract posts via page adapter -> render via
- * button render mode".
+ * button render mode", and reports on the toolbar icon whether the page's buttons
+ * are replaced.
  *
  * The adapter is fixed to Mastodon and the render mode to "replace-underline" for
  * now. In the future, the adapter will be selected by page URL and the render mode
@@ -122,6 +124,32 @@ async function findDisplayableAccount(): Promise<DisplayableAccount | null> {
   return { id: activeConfig.id, account };
 }
 
+/**
+ * The replacing state and page URL the toolbar icon was last told about, so that
+ * the background script is asked again only when either changes.
+ *
+ * The URL is part of it because Firefox resets a tab's icon when the tab
+ * navigates, and whether the history API navigation of a single-page client
+ * counts as that is unconfirmed. Telling the icon again on every URL change is
+ * right either way.
+ */
+let reportedToolbarIconState: string | null = null;
+
+/**
+ * Shows on this tab's toolbar icon whether its action buttons are replaced.
+ *
+ * Failing to update the icon leaves the buttons working, so the error is only
+ * logged.
+ */
+function reportReplacing(replacing: boolean): void {
+  const iconState = `${String(replacing)} ${location.href}`;
+  if (iconState === reportedToolbarIconState) return;
+  reportedToolbarIconState = iconState;
+  sendToolbarIconRequest(replacing).catch((error: unknown) => {
+    console.error("[content] Failed to update the toolbar icon.", error);
+  });
+}
+
 async function renderActionButtons(): Promise<void> {
   // Checked before touching storage so unrelated pages cost one querySelector.
   if (!pageAdapter.isSupportedPage()) {
@@ -161,6 +189,9 @@ async function renderActionButtons(): Promise<void> {
   if (generation !== renderGeneration) {
     return;
   }
+  // Decided by whether buttons may be shown rather than by how many were placed,
+  // so that the icon does not flicker while the client is still loading posts.
+  reportReplacing(displayable !== null);
 
   const renderMode = new ReplaceUnderlineButtonRenderMode(pageAdapter);
   const posts = pageAdapter.extractPosts();
@@ -195,6 +226,14 @@ void renderActionButtons();
 if (pageAdapter.isSupportedPage()) {
   observePage();
 }
+
+// A page restored from the back-forward cache keeps its buttons, but the tab's
+// icon may have been reset when the tab navigated away from it.
+window.addEventListener("pageshow", (event) => {
+  if (!event.persisted) return;
+  reportedToolbarIconState = null;
+  void renderActionButtons();
+});
 
 // Re-renders when anything the extension stores changes, not only the account
 // store: logging out or signing in again rewrites an account's credentials alone,

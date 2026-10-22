@@ -1,7 +1,8 @@
-import { buildMockAccountConfig } from "../app";
+import { buildMockAccountConfig, isToolbarIconRequest } from "../app";
 import { addAccount } from "../core";
 import { isMastodonActionRequest } from "../mastodon";
 import { handleMastodonActionRequest } from "./mastodon-action-handler";
+import { handleToolbarIconRequest } from "./toolbar-icon-handler";
 
 /**
  * Background script.
@@ -27,7 +28,10 @@ browser.runtime.onInstalled.addListener((details) => {
 
 // Returning a promise answers the sender; returning undefined leaves the message
 // to other listeners, so the listener itself must not be async.
-browser.runtime.onMessage.addListener((message) => {
+browser.runtime.onMessage.addListener((message, sender) => {
+  if (isToolbarIconRequest(message)) {
+    return handleToolbarIconRequest(message, sender);
+  }
   if (!isMastodonActionRequest(message)) return undefined;
   return handleMastodonActionRequest(message);
 });

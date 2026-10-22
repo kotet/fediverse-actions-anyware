@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <mask id="globe-cutout">
+    <rect width="32" height="32" fill="white"/>
+    <!-- A gap around the star, the meridian, and the equator are cut out of the globe. -->
+    <path d="M24 16 L25.88 20.91 L31.13 21.18 L27.04 24.49 L28.41 29.57 L24 26.7 L19.59 29.57 L20.96 24.49 L16.87 21.18 L22.12 20.91 Z" fill="black" stroke="black" stroke-width="5" stroke-linejoin="round"/>
+    <ellipse cx="14" cy="14" rx="5" ry="13" fill="none" stroke="black" stroke-width="2"/>
+    <path d="M1 14 H27" stroke="black" stroke-width="2"/>
+  </mask>
+  <circle cx="14" cy="14" r="13" fill="#3b82f6" mask="url(#globe-cutout)"/>
+  <path d="M24 16 L25.88 20.91 L31.13 21.18 L27.04 24.49 L28.41 29.57 L24 26.7 L19.59 29.57 L20.96 24.49 L16.87 21.18 L22.12 20.91 Z" fill="#3b82f6"/>
+</svg>

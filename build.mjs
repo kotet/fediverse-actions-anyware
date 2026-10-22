@@ -1,5 +1,5 @@
 import * as esbuild from "esbuild";
-import { cp, mkdir, readdir } from "fs/promises";
+import { cp, mkdir, readdir, rm } from "fs/promises";
 
 // The release build is the one submitted to AMO. It leaves out the mock
 // implementations, which exist only to check the extension during development,
@@ -8,6 +8,9 @@ import { cp, mkdir, readdir } from "fs/promises";
 const isRelease = process.argv.includes("--release");
 const outputDirectory = isRelease ? "dist-release" : "dist";
 
+// Starts from an empty directory so that a file removed from the sources does
+// not linger in the output and end up in the package submitted to AMO.
+await rm(outputDirectory, { recursive: true, force: true });
 await mkdir(`${outputDirectory}/background`, { recursive: true });
 await mkdir(`${outputDirectory}/content`, { recursive: true });
 await mkdir(`${outputDirectory}/popup`, { recursive: true });

@@ -9,6 +9,9 @@ function placedKinds(): string[] {
   );
 }
 
+/** Every message the content script sent to the background script, in order. */
+const sentMessages: unknown[] = [];
+
 function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -50,6 +53,11 @@ describe("ホスト側がログイン中のページの除外", () => {
         },
         onChanged: { addListener: () => {} },
       },
+      runtime: {
+        sendMessage: async (message: unknown) => {
+          sentMessages.push(message);
+        },
+      },
       i18n: { getMessage: (key: string) => key },
     });
     setHostSession(true);
@@ -62,6 +70,8 @@ describe("ホスト側がログイン中のページの除外", () => {
     document.body.innerHTML = APP_SHELL + renderedStatusPage;
     await wait(RENDER_SETTLE_MS);
     expect(placedKinds()).toEqual([]);
+    // The toolbar icon keeps the usual look, as nothing on the page is replaced.
+    expect(sentMessages).toEqual([]);
   });
 
   it("ホスト側が未ログインならボタンを挿入する", async () => {

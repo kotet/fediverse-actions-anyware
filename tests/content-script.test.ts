@@ -32,6 +32,7 @@ describe("コンテンツスクリプトの自動再描画", () => {
         },
         onChanged: { addListener: () => {} },
       },
+      runtime: { sendMessage: async () => undefined },
       i18n: { getMessage: (key: string) => key },
     });
     document.body.innerHTML = APP_SHELL;

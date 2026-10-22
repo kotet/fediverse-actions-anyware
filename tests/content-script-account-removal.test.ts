@@ -20,6 +20,17 @@ let readStore: () => Promise<Record<string, unknown>> = async () => STORE_WITH_A
 /** Fires the listener the content script registered for store changes. */
 let notifyStoreChanged: () => void = () => {};
 
+/** Every message the content script sent to the background script, in order. */
+const sentMessages: unknown[] = [];
+
+/** The replacing states reported for the toolbar icon, in order. */
+function reportedReplacingStates(): boolean[] {
+  return sentMessages.flatMap((message) => {
+    const { type, replacing } = message as { type: string; replacing: boolean };
+    return type === "toolbar-icon:set-replacing" ? [replacing] : [];
+  });
+}
+
 function placedKinds(): string[] {
   return [...document.querySelectorAll("[data-faa-action]")].map(
     (element) => element.getAttribute("data-faa-action") ?? "",
@@ -56,6 +67,11 @@ describe("アクティブなアカウントが無くなったときの後片付�
           },
         },
       },
+      runtime: {
+        sendMessage: async (message: unknown) => {
+          sentMessages.push(message);
+        },
+      },
       i18n: { getMessage: (key: string) => key },
     });
     document.body.innerHTML = APP_SHELL + renderedStatusPage;
@@ -72,6 +88,10 @@ describe("アクティブなアカウントが無くなったときの後片付�
 
     expect(placedKinds()).toEqual([]);
     expect(hiddenHostButtonCount()).toBe(0);
+  });
+
+  it("ツールバーアイコンには置き換えの開始と終了を一度ずつ伝える", () => {
+    expect(reportedReplacingStates()).toEqual([true, false]);
   });
 
   it("削除前に始まった描画が後から終わってもボタンを戻さない", async () => {
