@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- icon.svg for large sizes: the globe turns from purple at the upper left to blue
+       through diagonal lines that thicken one by one. The lines blur together below
+       64 px, so smaller sizes use icon.svg. -->
+  <clipPath id="globe">
+    <circle cx="14" cy="14" r="13"/>
+  </clipPath>
+  <mask id="globe-cutout">
+    <rect width="32" height="32" fill="white"/>
+    <!-- A gap around the star and the meridian are cut out of the globe. -->
+    <path d="M24 16 L25.88 20.91 L31.13 21.18 L27.04 24.49 L28.41 29.57 L24 26.7 L19.59 29.57 L20.96 24.49 L16.87 21.18 L22.12 20.91 Z" fill="black" stroke="black" stroke-width="5" stroke-linejoin="round"/>
+    <ellipse cx="14" cy="14" rx="5" ry="13" fill="none" stroke="black" stroke-width="1.6"/>
+  </mask>
+  <g clip-path="url(#globe)" mask="url(#globe-cutout)">
+    <rect width="32" height="32" fill="#9333ea"/>
+    <!-- Laid out from the upper left (top here) to the lower right (bottom here):
+         purple over 5% of the globe's area, four lines over 21% of its diameter, then blue. -->
+    <g transform="rotate(-45 14 14)" fill="#3b82f6">
+      <rect x="-12" y="4.008" width="56" height="0.409"/>
+      <rect x="-12" y="5.307" width="56" height="0.541"/>
+      <rect x="-12" y="6.606" width="56" height="0.673"/>
+      <rect x="-12" y="7.905" width="56" height="0.805"/>
+      <rect x="-12" y="8.99" width="56" height="35.01"/>
+    </g>
+  </g>
+  <path d="M24 16 L25.88 20.91 L31.13 21.18 L27.04 24.49 L28.41 29.57 L24 26.7 L19.59 29.57 L20.96 24.49 L16.87 21.18 L22.12 20.91 Z" fill="#3b82f6"/>
+</svg>
