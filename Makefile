@@ -14,7 +14,10 @@ build-release:
 source-archive:
 	node scripts/build-source-archive.mjs
 
-lint: build build-release
+# The release build is made here with --allow-untagged, so that it can be checked
+# on commits without a release tag; it is not the one to submit.
+lint: build
+	node build.mjs --release --allow-untagged
 	node scripts/check-i18n.mjs
 	web-ext lint --source-dir dist
 	web-ext lint --source-dir dist-release

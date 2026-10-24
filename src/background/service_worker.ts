@@ -1,5 +1,8 @@
+import { buildMockAccountConfig, isToolbarIconRequest } from "../app";
+import { addAccount } from "../core";
 import { isMastodonActionRequest } from "../mastodon";
 import { handleMastodonActionRequest } from "./mastodon-action-handler";
+import { handleToolbarIconRequest } from "./toolbar-icon-handler";
 
 /**
  * Background script.
@@ -12,13 +15,23 @@ import { handleMastodonActionRequest } from "./mastodon-action-handler";
  * `<all_urls>` content script match pattern already grants.
  */
 
-browser.runtime.onInstalled.addListener(() => {
+browser.runtime.onInstalled.addListener((details) => {
   console.log("Fediverse Actions Anyware installed.");
+  // A development build starts with an active mock account, so that the buttons
+  // appear without first adding an account in the popup, which an agent driving
+  // the browser cannot open. Only a fresh install gets one: an account the
+  // developer removed stays removed across reloads.
+  if (FAA_INCLUDE_MOCKS && details.reason === "install") {
+    void buildMockAccountConfig().then(addAccount);
+  }
 });
 
 // Returning a promise answers the sender; returning undefined leaves the message
 // to other listeners, so the listener itself must not be async.
-browser.runtime.onMessage.addListener((message) => {
+browser.runtime.onMessage.addListener((message, sender) => {
+  if (isToolbarIconRequest(message)) {
+    return handleToolbarIconRequest(message, sender);
+  }
   if (!isMastodonActionRequest(message)) return undefined;
   return handleMastodonActionRequest(message);
 });

@@ -207,12 +207,12 @@ describe("MastodonHomeAccount", () => {
         postUrl: POST_URL,
       },
     ],
-  ])("%s はバックグラウンドへ依頼する", async (_name, call, expectedMessage) => {
+  ])("%s asks the background script", async (_name, call, expectedMessage) => {
     await call(new MastodonHomeAccount("m1", HOME_INSTANCE));
     expect(sendMessage).toHaveBeenCalledWith(expectedMessage);
   });
 
-  it("バックグラウンドの応答をそのまま返す", async () => {
+  it("returns the background script's answer as is", async () => {
     sendMessage.mockResolvedValue({
       ok: false,
       error: { kind: "not-found", message: "Post not found" },
@@ -236,7 +236,7 @@ describe("MastodonHomeAccount", () => {
     ],
     ["openPost", (account: MastodonHomeAccount) => account.openPost(POST_URL)],
   ])(
-    "バックグラウンドへ届かないときは %s が network ではなく failed を返す",
+    "%s returns failed rather than network when the background script cannot be reached",
     async (_name, call) => {
       sendMessage.mockRejectedValue(new Error("Receiving end does not exist"));
       const result = await call(new MastodonHomeAccount("m1", HOME_INSTANCE));
@@ -273,7 +273,7 @@ describe("handleMastodonActionRequest", () => {
     ["bookmark", "apply", "bookmark", true],
     ["bookmark", "undo", "unbookmark", false],
   ] as const)(
-    "%s の %s は解決した投稿の %s を叩き、結果の状態を返す",
+    "%s %s calls %s on the resolved post and returns the resulting state",
     async (action, direction, path, expectedActive) => {
       const result = await handleMastodonActionRequest({
         type: "mastodon:perform-action",
@@ -293,18 +293,18 @@ describe("handleMastodonActionRequest", () => {
 
   it.each([
     [
-      "インスタンスの報告を優先する",
+      "what the instance reports wins",
       "undo",
       { id: RESOLVED_STATUS_ID, favourited: true },
       true,
     ],
     [
-      "報告が無ければ依頼した向きを使う",
+      "the direction asked for is used when the instance reports nothing",
       "apply",
       { id: RESOLVED_STATUS_ID },
       true,
     ],
-  ] as const)("成功後の状態は %s", async (_name, direction, answer, expected) => {
+  ] as const)("for the state after a success, %s", async (_name, direction, answer, expected) => {
     stubMastodonApiAnswering(answer);
     const result = await handleMastodonActionRequest({
       type: "mastodon:perform-action",
@@ -316,7 +316,7 @@ describe("handleMastodonActionRequest", () => {
     expect(result).toEqual({ ok: true, active: expected });
   });
 
-  it("一度解決した投稿は取り消しのときに再検索しない", async () => {
+  it("does not search again for a post already resolved when undoing", async () => {
     await handleMastodonActionRequest({
       type: "mastodon:perform-action",
       accountId: "m1",
@@ -334,7 +334,7 @@ describe("handleMastodonActionRequest", () => {
     expect(searchCallCount()).toBe(1);
   });
 
-  it("押し下げでの先行解決と重なってもクリックは解決をやり直さない", async () => {
+  it("a click overlapping the resolution started on press does not resolve again", async () => {
     const preparing = handleMastodonActionRequest({
       type: "mastodon:start-resolving-post",
       accountId: "m1",
@@ -352,7 +352,7 @@ describe("handleMastodonActionRequest", () => {
     expect(searchCallCount()).toBe(1);
   });
 
-  it("リクエストではなく保存された設定のインスタンスへ送信する", async () => {
+  it("sends to the instance in the stored configuration, not one from the request", async () => {
     await handleMastodonActionRequest({
       type: "mastodon:perform-action",
       accountId: "m1",
@@ -363,7 +363,7 @@ describe("handleMastodonActionRequest", () => {
     expect(fetchCalls.every((call) => call.url.startsWith(`https://${HOME_INSTANCE}/`))).toBe(true);
   });
 
-  it("ホームインスタンス上に投稿が見つからなければ not-found を返す", async () => {
+  it("returns not-found when the post is not found on the home instance", async () => {
     stubMastodonApi(false);
     const result = await handleMastodonActionRequest({
       type: "mastodon:perform-action",
@@ -378,7 +378,7 @@ describe("handleMastodonActionRequest", () => {
     });
   });
 
-  it("トークンが無ければ通信せずに unauthenticated を返す", async () => {
+  it("returns unauthenticated without any request when there is no token", async () => {
     stubBackgroundStorage({
       homeAccountStore: { accounts: [MASTODON_ACCOUNT], activeAccountId: "m1" },
     });
@@ -397,9 +397,9 @@ describe("handleMastodonActionRequest", () => {
   });
 
   it.each([
-    ["未登録のアカウント", "unknown"],
-    ["Mastodon ではないアカウント", "mock-1"],
-  ])("%s の依頼は通信せずに失敗する", async (_name, accountId) => {
+    ["an unregistered account", "unknown"],
+    ["an account that is not Mastodon", "mock-1"],
+  ])("a request for %s fails without any request", async (_name, accountId) => {
     stubBackgroundStorage({
       homeAccountStore: {
         accounts: [MASTODON_ACCOUNT, { id: "mock-1", software: "mock", label: "Mock" }],
@@ -418,9 +418,9 @@ describe("handleMastodonActionRequest", () => {
   });
 
   it.each([
-    ["トークンがあれば", "token", "authenticated"],
-    ["トークンが無ければ", undefined, "unauthenticated"],
-  ])("認証状態は %s %s", async (_name, accessToken, expected) => {
+    ["with a token", "token", "authenticated"],
+    ["without a token", undefined, "unauthenticated"],
+  ])("reports the auth state of an account %s", async (_name, accessToken, expected) => {
     stubBackgroundStorage({
       homeAccountStore: { accounts: [MASTODON_ACCOUNT], activeAccountId: "m1" },
       mastodonCredentials_m1: {
@@ -446,7 +446,7 @@ describe("handleMastodonActionRequest", () => {
     [500, "network"],
     [429, "rate-limited"],
     [418, "failed"],
-  ])("HTTP %i は %s として報告される", async (status, kind) => {
+  ])("HTTP %i is reported as %s", async (status, kind) => {
     stubMastodonApi(true, status);
     const result = await handleMastodonActionRequest({
       type: "mastodon:perform-action",
@@ -458,7 +458,7 @@ describe("handleMastodonActionRequest", () => {
     expect(result).toMatchObject({ ok: false, error: { kind } });
   });
 
-  it("応答が返らない通信は network として報告される", async () => {
+  it("a request that gets no response is reported as network", async () => {
     vi.stubGlobal("fetch", async () => {
       throw new TypeError("NetworkError when attempting to fetch resource.");
     });
@@ -472,7 +472,7 @@ describe("handleMastodonActionRequest", () => {
     expect(result).toMatchObject({ ok: false, error: { kind: "network" } });
   });
 
-  it("解決した投稿をホームインスタンス上で開く", async () => {
+  it("opens the resolved post on the home instance", async () => {
     const result = await handleMastodonActionRequest({
       type: "mastodon:open-post",
       accountId: "m1",
@@ -483,7 +483,7 @@ describe("handleMastodonActionRequest", () => {
     expect(createdTabUrls).toEqual([RESOLVED_POST_URL]);
   });
 
-  it("解決できないときはタブを開かず失敗を返す", async () => {
+  it("opens no tab and returns a failure when the post cannot be resolved", async () => {
     stubMastodonApi(false);
     const result = await handleMastodonActionRequest({
       type: "mastodon:open-post",

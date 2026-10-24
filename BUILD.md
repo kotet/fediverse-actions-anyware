@@ -28,7 +28,9 @@ npx web-ext build --source-dir dist-release --artifacts-dir web-ext-artifacts/re
    the step that generates every JavaScript file in the submitted package. It bundles the entry
    points `src/background/service_worker.ts`, `src/content/content.ts`, `src/popup/popup.ts`, and
    `src/popup/oauth-callback.ts`, then copies `manifest.json`, the HTML and CSS files under `src/`,
-   the icons, and the locale files into `dist-release/`.
+   the icons, and the locale files into `dist-release/`. `manifest.json` in the source has no
+   `version`; the build adds the one written in the `VERSION` file, which `git archive` filled in
+   with the release tag when the source archive was made.
 3. `npx web-ext build` only packs the contents of `dist-release/` into a ZIP archive under
    `web-ext-artifacts/release/`. It does not transform any file, so the output of step 2 can be
    compared against the submitted package directly.

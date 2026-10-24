@@ -1,0 +1,118 @@
+# Submits a new version to addons.mozilla.org (AMO) when a version tag such as 0.2.0 is pushed.
+# The tag is the version: the build writes it into the manifest (see scripts/extension-version.mjs).
+#
+# Only updates of an add-on that is already listed on AMO are handled: the first version has to be
+# submitted by hand, because it needs the listing metadata (summary, categories, license).
+#
+# The listing description is replaced with amo/metadata.json on every submission. AMO's source
+# applies it within the submission request, so the new description most likely shows while the
+# version still waits for review.
+#
+# Repository secrets:
+# - AMO_API_KEY, AMO_API_SECRET: the JWT issuer and secret from the AMO Developer Hub
+#   ("Manage API Keys").
+# - AMO_TEST_ACCOUNT_EMAIL, AMO_TEST_ACCOUNT_PASSWORD: the credentials of the test Mastodon account,
+#   filled into the notes to reviewer (amo/approval-notes.txt) by scripts/build-amo-metadata.mjs.
+name: Release
+
+on:
+  push:
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
+
+permissions:
+  contents: read
+
+jobs:
+  submit-to-amo:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out the tagged commit
+        uses: actions/checkout@v7
+        with:
+          # The build reads the version from the tag with git describe, and the source archive
+          # gets it through git archive; fetch the full history and tags so both can see it.
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          # Same version as BUILD.md, so the submitted package matches what reviewers rebuild.
+          node-version: 24.18.0
+          cache: npm
+
+      - name: Check that the AMO secrets are set
+        env:
+          AMO_API_KEY: ${{ secrets.AMO_API_KEY }}
+          AMO_API_SECRET: ${{ secrets.AMO_API_SECRET }}
+          AMO_TEST_ACCOUNT_EMAIL: ${{ secrets.AMO_TEST_ACCOUNT_EMAIL }}
+          AMO_TEST_ACCOUNT_PASSWORD: ${{ secrets.AMO_TEST_ACCOUNT_PASSWORD }}
+        run: |
+          for name in AMO_API_KEY AMO_API_SECRET AMO_TEST_ACCOUNT_EMAIL AMO_TEST_ACCOUNT_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Repository secret $name is not set."
+              exit 1
+            fi
+          done
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Run unit tests
+        run: npm test
+
+      # The same commands as BUILD.md. The Makefile is not used because it calls web-ext without
+      # npx, which needs a global install.
+      - name: Build the release package
+        run: |
+          node build.mjs --release
+          npx web-ext build --source-dir dist-release --artifacts-dir web-ext-artifacts/release --overwrite-dest
+
+      # git describe picks one tag when the commit carries several, which may not be the one pushed.
+      - name: Check that the built version is the pushed tag
+        id: version
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          built_version=$(node -p 'require("./dist-release/manifest.json").version')
+          if [ "$built_version" != "$TAG_NAME" ]; then
+            echo "::error::Built version $built_version does not match the pushed tag $TAG_NAME."
+            exit 1
+          fi
+          echo "version=$built_version" >> "$GITHUB_OUTPUT"
+
+      - name: Lint the release package
+        run: |
+          node scripts/check-i18n.mjs
+          npx web-ext lint --source-dir dist-release
+
+      - name: Build the source code archive
+        run: node scripts/build-source-archive.mjs
+
+      # Written outside the workspace, because it holds the test account credentials.
+      - name: Build the metadata with the notes to reviewer
+        env:
+          AMO_TEST_ACCOUNT_EMAIL: ${{ secrets.AMO_TEST_ACCOUNT_EMAIL }}
+          AMO_TEST_ACCOUNT_PASSWORD: ${{ secrets.AMO_TEST_ACCOUNT_PASSWORD }}
+        run: node scripts/build-amo-metadata.mjs "$RUNNER_TEMP/amo-metadata.json"
+
+      - name: Submit to AMO
+        uses: kewisch/action-web-ext@v2
+        with:
+          cmd: sign
+          channel: listed
+          source: web-ext-artifacts/release/fediverse_actions_anyware-${{ steps.version.outputs.version }}.zip
+          sourceCode: web-ext-artifacts/release/fediverse_actions_anyware-${{ steps.version.outputs.version }}-source.zip
+          # The listing description and the notes to reviewer. Name and summary are left out of
+          # amo/metadata.json because AMO hides the listing from search engines when either of them
+          # changes.
+          metaDataFile: ${{ runner.temp }}/amo-metadata.json
+          apiKey: ${{ secrets.AMO_API_KEY }}
+          apiSecret: ${{ secrets.AMO_API_SECRET }}
+          # A listed version waits for human review, which takes far longer than a job should run.
+          # Finish once AMO has accepted the upload; the signed file is not needed here because AMO
+          # distributes it.
+          approvalTimeout: 0

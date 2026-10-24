@@ -41,7 +41,7 @@ function changeCredentials(nextAuthState: AuthState): void {
  * The page is left alone between the steps below, so any change to the buttons
  * can only come from the storage change the step reports.
  */
-describe("認証情報の変更によるコンテンツスクリプトの再描画", () => {
+describe("content script re-rendering on credential changes", () => {
   beforeAll(async () => {
     vi.stubGlobal("browser", {
       storage: {
@@ -79,23 +79,23 @@ describe("認証情報の変更によるコンテンツスクリプトの再描�
     await wait(RENDER_SETTLE_MS);
   });
 
-  it("認証済みならボタンを挿入する", () => {
+  it("inserts buttons while authenticated", () => {
     expect(placedKinds().length).toBeGreaterThan(0);
   });
 
-  it("ログアウトで認証情報だけが変わってもボタンを取り除く", async () => {
+  it("removes buttons when logging out changes the credentials alone", async () => {
     changeCredentials("unauthenticated");
     await wait(RENDER_SETTLE_MS);
     expect(placedKinds()).toEqual([]);
   });
 
-  it("再ログインで認証情報だけが変わってもボタンを挿入し直す", async () => {
+  it("inserts buttons again when signing in again changes the credentials alone", async () => {
     changeCredentials("authenticated");
     await wait(RENDER_SETTLE_MS);
     expect(placedKinds().length).toBeGreaterThan(0);
   });
 
-  it("認証済みのまま認証情報が変わると実行済みの表示を捨てる", async () => {
+  it("drops the shown action states when the credentials change while authenticated", async () => {
     document.querySelector<HTMLElement>('[data-faa-action="favourite"]')?.click();
     await wait(RENDER_SETTLE_MS);
     expect(favouriteIsShownActive()).toBe(true);

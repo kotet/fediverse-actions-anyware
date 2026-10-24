@@ -129,26 +129,26 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
     });
   });
 
-  it("モード種別が replace-underline である", () => {
+  it("has the mode kind replace-underline", () => {
     expect(new ReplaceUnderlineButtonRenderMode(new FakeActionButtonReplacer()).mode).toBe(
       "replace-underline",
     );
   });
 
-  it("アクションすべてを元ボタンの置き換えで描画する", () => {
+  it("renders every action by replacing the original button", () => {
     const replacer = new FakeActionButtonReplacer();
     new ReplaceUnderlineButtonRenderMode(replacer).render(createPost(), createActions());
     expect(replacer.replacedKinds).toEqual(["reply", "favourite", "boost", "bookmark"]);
   });
 
-  it("元ボタンのない種別は読み飛ばす", () => {
+  it("skips a kind that has no original button", () => {
     const replacer = new FakeActionButtonReplacer(["bookmark"]);
     const post = createPost();
     new ReplaceUnderlineButtonRenderMode(replacer).render(post, createActions());
     expect(buttonsIn(post)).toHaveLength(ACTION_KINDS.length - 1);
   });
 
-  it("描画のたびに先に元の状態へ戻す", () => {
+  it("restores the original state first on every render", () => {
     const replacer = new FakeActionButtonReplacer();
     const post = createPost();
     const renderMode = new ReplaceUnderlineButtonRenderMode(replacer);
@@ -158,7 +158,7 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
     expect(buttonsIn(post)).toHaveLength(ACTION_KINDS.length);
   });
 
-  it("消去すると描画したボタンを元の状態へ戻す", () => {
+  it("clearing restores the rendered buttons to the original state", () => {
     const post = createPost();
     const renderMode = new ReplaceUnderlineButtonRenderMode(new FakeActionButtonReplacer());
     renderMode.render(post, createActions());
@@ -166,7 +166,7 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
     expect(buttonsIn(post)).toEqual([]);
   });
 
-  it("描画したボタンすべてに下線用のクラスを付ける", () => {
+  it("puts the underline class on every rendered button", () => {
     const post = createPost();
     new ReplaceUnderlineButtonRenderMode(new FakeActionButtonReplacer()).render(
       post,
@@ -177,7 +177,7 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
     }
   });
 
-  it("title と aria-label をホームアカウント用の文言で上書きする", () => {
+  it("overwrites title and aria-label with the home account wording", () => {
     const post = createPost();
     new ReplaceUnderlineButtonRenderMode(new FakeActionButtonReplacer()).render(
       post,
@@ -191,7 +191,7 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
   });
 
   it.each(ACTION_KINDS.map((kind, index) => [kind, index] as const))(
-    "%s ボタンをクリックすると対応するアクションを1回だけ実行する",
+    "clicking the %s button runs its action exactly once",
     (_kind, index) => {
       const post = createPost();
       const actions = createActions();
@@ -207,7 +207,7 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
   );
 
   it.each(["mousedown", "mouseup", "click"])(
-    "%s イベントを祖先へ伝播させない",
+    "does not let the %s event propagate to ancestors",
     (eventType) => {
       const post = createPost();
       const ancestorListener = vi.fn();
@@ -222,7 +222,7 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
     },
   );
 
-  it("再描画すると新しいアクションが実行される", () => {
+  it("runs the new actions after a re-render", () => {
     const post = createPost();
     const staleActions = createActions();
     const freshActions = createActions();
@@ -235,11 +235,11 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
   });
 
   it.each([
-    { name: "主ボタン", mouseButton: 0, pressStartCount: 1 },
-    { name: "中ボタン", mouseButton: 1, pressStartCount: 0 },
-    { name: "右ボタン", mouseButton: 2, pressStartCount: 0 },
+    { name: "primary", mouseButton: 0, pressStartCount: 1 },
+    { name: "middle", mouseButton: 1, pressStartCount: 0 },
+    { name: "right", mouseButton: 2, pressStartCount: 0 },
   ])(
-    "$name の押し下げでクリックに要る準備を始めるのは主ボタンのときだけ",
+    "a press of the $name button starts preparing for the click only if it is the primary one",
     ({ mouseButton, pressStartCount }) => {
       const post = createPost();
       const actions = createActions();
@@ -255,7 +255,7 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
     },
   );
 
-  describe("アクション結果の表示", () => {
+  describe("showing action results", () => {
     /** Mirror of the render mode's own timings. */
     const SUCCESS_MESSAGE_MS = 4000;
     const FAILURE_DISPLAY_MS = 8000;
@@ -279,7 +279,7 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
       const action = createActions(result).find(
         (candidate) => candidate.kind === kind,
       );
-      if (action === undefined) throw new Error(`未知のアクション種別: ${kind}`);
+      if (action === undefined) throw new Error(`unknown action kind: ${kind}`);
       return action;
     }
 
@@ -290,7 +290,7 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
         [action],
       );
       const button = buttonsIn(post)[0];
-      if (button === undefined) throw new Error("ボタンが描画されなかった");
+      if (button === undefined) throw new Error("no button was rendered");
       return button;
     }
 
@@ -306,7 +306,7 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
       vi.restoreAllMocks();
     });
 
-    it("描画した直後は状態を表さない", () => {
+    it("shows no state right after rendering", () => {
       const button = renderSingleAction(createAction("favourite"));
       expect(button.hasAttribute("data-faa-state")).toBe(false);
       expect(button.hasAttribute("data-faa-active")).toBe(false);
@@ -314,14 +314,14 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
       expect(button.title).toBe("actionButtonHomeAccountTitle:favourite");
     });
 
-    it("結果が返るまでは実行中として表示する", () => {
+    it("shows the action as running until the result comes back", () => {
       const button = renderSingleAction(createAction("favourite", NEVER_SETTLES));
       button.click();
       expect(button.getAttribute("data-faa-state")).toBe("running");
       expect(button.title).toBe("actionStateRunning:favourite");
     });
 
-    it("実行中の再クリックでは同じ依頼を重ねて送らない", () => {
+    it("does not send the same request again on a click while running", () => {
       const action = createAction("favourite", NEVER_SETTLES);
       const button = renderSingleAction(action);
       button.click();
@@ -329,7 +329,7 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
       expect(action.onClick).toHaveBeenCalledTimes(1);
     });
 
-    it("成功するとアクティブ表示になり、一定時間後に状態を述べる文言へ変わる", async () => {
+    it("turns active on success and, after a while, switches to wording that states the state", async () => {
       const button = renderSingleAction(createAction("favourite"));
       button.click();
       await vi.advanceTimersByTimeAsync(0);
@@ -343,14 +343,14 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
       expect(button.getAttribute("aria-label")).toBe("actionStateActive:favourite");
     });
 
-    it("アクティブ表示はホスト側の見え方もページアダプターに任せる", async () => {
+    it("leaves the host's look for the active state to the page adapter as well", async () => {
       const button = renderSingleAction(createAction("favourite"));
       button.click();
       await vi.advanceTimersByTimeAsync(0);
       expect(button.classList).toContain(HOST_ACTIVE_CLASS);
     });
 
-    it("状態を残さないアクションは成功しても既定の見え方へ戻る", async () => {
+    it("returns to the resting look after a success of an action that leaves no state", async () => {
       const button = renderSingleAction(createAction("reply"));
       button.click();
       await vi.advanceTimersByTimeAsync(0);
@@ -360,7 +360,7 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
     });
 
     it.each(ERROR_MESSAGE_KEYS)(
-      "%s の失敗はその種別の文言で伝える",
+      "reports a %s failure with the wording for that kind",
       async (kind, messageKey) => {
         const button = renderSingleAction(
           createAction("favourite", {
@@ -376,7 +376,7 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
       },
     );
 
-    it("失敗の表示は一定時間で操作前の見え方へ戻る", async () => {
+    it("returns from showing a failure to the look before the click after a while", async () => {
       const button = renderSingleAction(
         createAction("favourite", {
           ok: false,
@@ -393,7 +393,7 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
       expect(button.title).toBe("actionButtonHomeAccountTitle:favourite");
     });
 
-    it("アクティブになった後に失敗しても、表示が戻るとアクティブのままになる", async () => {
+    it("stays active once the failure display ends, for a failure after becoming active", async () => {
       const action = createAction("favourite");
       action.onClick
         .mockResolvedValueOnce({ ok: true, active: true })
@@ -415,7 +415,7 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
       expect(button.title).toBe("actionStateActive:favourite");
     });
 
-    it("翻訳できない技術的なメッセージはコンソールへ出す", async () => {
+    it("writes the technical message, which cannot be translated, to the console", async () => {
       const button = renderSingleAction(
         createAction("favourite", {
           ok: false,
@@ -430,7 +430,7 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
     });
   });
 
-  describe("アクション状態の維持と取り消し", () => {
+  describe("keeping and undoing the action state", () => {
     const SUCCESS_MESSAGE_MS = 4000;
 
     /** Renders one favourite button, optionally already in effect on the post. */
@@ -439,7 +439,7 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
       button: HTMLButtonElement;
     } {
       const source = createActions().find((candidate) => candidate.kind === "favourite");
-      if (source === undefined) throw new Error("favourite が作られなかった");
+      if (source === undefined) throw new Error("no favourite action was built");
       const action: SpiedAction = { ...source, initiallyActive };
       const post = createPost();
       new ReplaceUnderlineButtonRenderMode(new FakeActionButtonReplacer()).render(
@@ -447,7 +447,7 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
         [action],
       );
       const button = buttonsIn(post)[0];
-      if (button === undefined) throw new Error("ボタンが描画されなかった");
+      if (button === undefined) throw new Error("no button was rendered");
       return { action, button };
     }
 
@@ -460,14 +460,14 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
       vi.restoreAllMocks();
     });
 
-    it("非アクティブなボタンの最初のクリックは実行として送る", async () => {
+    it("sends the first click on an inactive button as apply", async () => {
       const { action, button } = renderFavourite();
       button.click();
       await vi.advanceTimersByTimeAsync(0);
       expect(action.onClick).toHaveBeenCalledWith("apply");
     });
 
-    it("アクティブなボタンをもう一度クリックすると取り消しとして送る", async () => {
+    it("sends another click on an active button as undo", async () => {
       const { action, button } = renderFavourite();
       button.click();
       await vi.advanceTimersByTimeAsync(0);
@@ -476,7 +476,7 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
       expect(action.onClick.mock.calls).toEqual([["apply"], ["undo"]]);
     });
 
-    it("取り消しが成功すると非アクティブへ戻り、取り消した旨を述べる", async () => {
+    it("turns inactive on a successful undo and says the action was undone", async () => {
       const { button } = renderFavourite();
       button.click();
       await vi.advanceTimersByTimeAsync(0);
@@ -491,14 +491,14 @@ describe("ReplaceUnderlineButtonRenderMode", () => {
       expect(button.title).toBe("actionButtonHomeAccountTitle:favourite");
     });
 
-    it("既に実行済みとして渡されたボタンは描画直後からアクティブに見える", () => {
+    it("shows a button handed over as already taken as active right after rendering", () => {
       const { button } = renderFavourite(true);
       expect(button.hasAttribute("data-faa-active")).toBe(true);
       expect(button.classList).toContain(HOST_ACTIVE_CLASS);
       expect(button.title).toBe("actionStateActive:favourite");
     });
 
-    it("既に実行済みとして渡されたボタンは最初のクリックが取り消しになる", async () => {
+    it("makes the first click on a button handed over as already taken an undo", async () => {
       const { action, button } = renderFavourite(true);
       button.click();
       await vi.advanceTimersByTimeAsync(0);

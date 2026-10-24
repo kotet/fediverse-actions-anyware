@@ -1,0 +1,62 @@
+Test account
+- Home instance: mastodon.kotet.jp
+- Email: {{AMO_TEST_ACCOUNT_EMAIL}}
+- Password: {{AMO_TEST_ACCOUNT_PASSWORD}}
+- Two-factor authentication is disabled.
+
+How to test
+1. Open the extension popup from the toolbar, press "Add Account", keep
+   "Mastodon" as the type, enter "mastodon.kotet.jp" as the instance and press
+   "Add". A tab opens on mastodon.kotet.jp; sign in with the account above and
+   authorize the app. "Account successfully added." is shown, and the account
+   appears in the popup as "mastodon / Authenticated".
+2. Select the account with its radio button so that it is the active one.
+3. Open a post on a different Mastodon instance where you are not signed in,
+   for example:
+   https://mastodon.archive.org/@internetarchive/116818894033044875
+   The reply, boost, favourite and bookmark buttons of the post are replaced
+   with copies marked by a thin underline, and the star in the extension's
+   toolbar icon turns gold on that tab.
+4. Press the favourite button. The underline turns into moving dashes while the
+   request runs, then into a thicker purple line once the post is favourited on
+   mastodon.kotet.jp. Pressing it again undoes the favourite. Boost and
+   bookmark behave the same way.
+5. Press the reply button. A new tab opens with the same post on
+   mastodon.kotet.jp, where the reply can be written.
+6. On a page of mastodon.kotet.jp itself, where the browser is now signed in,
+   the extension adds nothing: the page's own buttons already act as the
+   signed-in account.
+
+Why content_scripts.matches is <all_urls>
+Mastodon is run on thousands of independently operated instances, and the
+extension is meant to work on any of them, so the set of sites cannot be listed
+in advance. The content script inspects the page and does nothing unless it
+finds a Mastodon post. The same match pattern is also what grants the host
+permission the background script uses to call the API of the home instance the
+user registered; requests to that instance are made from the background script
+because the host page's Content Security Policy blocks them from the content
+script.
+
+Data handling
+The extension sends data only to the Mastodon instance the user registers as
+their home instance. Nothing is sent to the developer or to any third party.
+This is declared in data_collection_permissions as the required types
+"authenticationInfo" and "browsingActivity":
+- authenticationInfo: registering an account runs the OAuth flow against that
+  instance (app registration, authorization code exchange, and a credentials
+  check). The password is entered on the instance's own page and is never seen
+  by the extension. The resulting access token is stored in
+  browser.storage.local and is sent only to the instance that issued it.
+  Signing out deletes the token; removing the account deletes all stored
+  credentials.
+- browsingActivity: when the user presses one of the extension's buttons, the
+  URL of that post is sent to the home instance (GET /api/v2/search with
+  resolve=true) so the post can be looked up there, followed by the action
+  itself. The lookup starts on mousedown to save time, so the URL is sent as
+  soon as the button is pressed, even if the click is not completed. Nothing is
+  sent for posts the user does not press a button on, and the content of posts
+  is never sent.
+
+Source code
+The submitted package is built from the attached source archive with the
+commands in BUILD.md. No minifier or obfuscator is used.

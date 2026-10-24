@@ -10,7 +10,11 @@ import type { ButtonKind, ExtractedPost } from "./types";
 export interface PageAdapter {
   /**
    * Determines whether the current page is a supported client for this adapter.
-   * If `false`, the extension does not operate on this page.
+   *
+   * Asked once, when the content script loads, to pick the adapter for the page:
+   * the first one answering `true` is used, and if none does, the extension does
+   * not operate on this page. What it reads therefore has to be in the document
+   * the server delivers.
    */
   isSupportedPage(): boolean;
 

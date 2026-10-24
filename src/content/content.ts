@@ -2,6 +2,7 @@ import {
   PostActionStateMemory,
   buildActionButtons,
   createHomeAccount,
+  sendToolbarIconRequest,
 } from "../app";
 import { ReplaceUnderlineButtonRenderMode } from "../button-render-modes";
 import {
@@ -10,19 +11,20 @@ import {
   supportsActionButtonReplacement,
   type AuthState,
   type HomeAccount,
+  type PageAdapter,
 } from "../core";
-import { MastodonPageAdapter } from "../page-adapters";
+import { MastodonPageAdapter, MastodonV3PublicLayoutPageAdapter } from "../page-adapters";
 
 /**
  * Content script orchestration.
  *
- * Wires up the design flow of "skip pages whose own client is signed in -> get
- * active account -> check auth -> extract posts via page adapter -> render via
- * button render mode".
+ * Wires up the design flow of "pick the page adapter -> skip pages whose own
+ * client is signed in -> get active account -> check auth -> extract posts via
+ * page adapter -> render via button render mode", and reports on the toolbar icon
+ * whether the page's buttons are replaced.
  *
- * The adapter is fixed to Mastodon and the render mode to "replace-underline" for
- * now. In the future, the adapter will be selected by page URL and the render mode
- * by settings.
+ * The render mode is fixed to "replace-underline" for now. In the future, it will
+ * be selected by settings.
  */
 
 /**
@@ -36,7 +38,19 @@ import { MastodonPageAdapter } from "../page-adapters";
  */
 const RERENDER_DEBOUNCE_MS = 200;
 
-const pageAdapter = new MastodonPageAdapter();
+/**
+ * The adapter for the client this page was served with, or `null` on a page no
+ * adapter supports.
+ *
+ * Picked once, when the script loads at `document_idle`: what tells the clients
+ * apart is markup the server writes into the document (the web client's mount
+ * point, the public layout's root), which is in place by then and stays for the
+ * life of the document.
+ */
+const pageAdapter: PageAdapter | null =
+  [new MastodonPageAdapter(), new MastodonV3PublicLayoutPageAdapter()].find((adapter) =>
+    adapter.isSupportedPage(),
+  ) ?? null;
 
 /**
  * Outlives the buttons, which are rebuilt on every render, so that an action the
@@ -122,9 +136,34 @@ async function findDisplayableAccount(): Promise<DisplayableAccount | null> {
   return { id: activeConfig.id, account };
 }
 
+/**
+ * The replacing state and page URL the toolbar icon was last told about, so that
+ * the background script is asked again only when either changes.
+ *
+ * The URL is part of it because Firefox resets a tab's icon when the tab
+ * navigates, and whether the history API navigation of a single-page client
+ * counts as that is unconfirmed. Telling the icon again on every URL change is
+ * right either way.
+ */
+let reportedToolbarIconState: string | null = null;
+
+/**
+ * Shows on this tab's toolbar icon whether its action buttons are replaced.
+ *
+ * Failing to update the icon leaves the buttons working, so the error is only
+ * logged.
+ */
+function reportReplacing(replacing: boolean): void {
+  const iconState = `${String(replacing)} ${location.href}`;
+  if (iconState === reportedToolbarIconState) return;
+  reportedToolbarIconState = iconState;
+  sendToolbarIconRequest(replacing).catch((error: unknown) => {
+    console.error("[content] Failed to update the toolbar icon.", error);
+  });
+}
+
 async function renderActionButtons(): Promise<void> {
-  // Checked before touching storage so unrelated pages cost one querySelector.
-  if (!pageAdapter.isSupportedPage()) {
+  if (pageAdapter === null) {
     return;
   }
 
@@ -161,6 +200,9 @@ async function renderActionButtons(): Promise<void> {
   if (generation !== renderGeneration) {
     return;
   }
+  // Decided by whether buttons may be shown rather than by how many were placed,
+  // so that the icon does not flicker while the client is still loading posts.
+  reportReplacing(displayable !== null);
 
   const renderMode = new ReplaceUnderlineButtonRenderMode(pageAdapter);
   const posts = pageAdapter.extractPosts();
@@ -192,9 +234,17 @@ void renderActionButtons();
 // Keeps up with the client-side rendering that produces the posts in the first
 // place, and with SPA navigation, infinite scroll, and React re-renders that drop
 // the substituted buttons afterwards.
-if (pageAdapter.isSupportedPage()) {
+if (pageAdapter !== null) {
   observePage();
 }
+
+// A page restored from the back-forward cache keeps its buttons, but the tab's
+// icon may have been reset when the tab navigated away from it.
+window.addEventListener("pageshow", (event) => {
+  if (!event.persisted) return;
+  reportedToolbarIconState = null;
+  void renderActionButtons();
+});
 
 // Re-renders when anything the extension stores changes, not only the account
 // store: logging out or signing in again rewrites an account's credentials alone,
