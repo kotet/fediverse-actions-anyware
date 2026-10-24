@@ -11,9 +11,8 @@
 # Repository secrets:
 # - AMO_API_KEY, AMO_API_SECRET: the JWT issuer and secret from the AMO Developer Hub
 #   ("Manage API Keys").
-# - AMO_APPROVAL_NOTES: the text of the notes to reviewer, including the credentials of the test
-#   Mastodon account and how to test with it. Kept out of the repository because of the
-#   credentials.
+# - AMO_TEST_ACCOUNT_EMAIL, AMO_TEST_ACCOUNT_PASSWORD: the credentials of the test Mastodon account,
+#   filled into the notes to reviewer (amo/approval-notes.txt) by scripts/build-amo-metadata.mjs.
 name: Release
 
 on:
@@ -46,9 +45,10 @@ jobs:
         env:
           AMO_API_KEY: ${{ secrets.AMO_API_KEY }}
           AMO_API_SECRET: ${{ secrets.AMO_API_SECRET }}
-          AMO_APPROVAL_NOTES: ${{ secrets.AMO_APPROVAL_NOTES }}
+          AMO_TEST_ACCOUNT_EMAIL: ${{ secrets.AMO_TEST_ACCOUNT_EMAIL }}
+          AMO_TEST_ACCOUNT_PASSWORD: ${{ secrets.AMO_TEST_ACCOUNT_PASSWORD }}
         run: |
-          for name in AMO_API_KEY AMO_API_SECRET AMO_APPROVAL_NOTES; do
+          for name in AMO_API_KEY AMO_API_SECRET AMO_TEST_ACCOUNT_EMAIL AMO_TEST_ACCOUNT_PASSWORD; do
             if [ -z "${!name}" ]; then
               echo "::error::Repository secret $name is not set."
               exit 1
@@ -92,6 +92,13 @@ jobs:
       - name: Build the source code archive
         run: node scripts/build-source-archive.mjs
 
+      # Written outside the workspace, because it holds the test account credentials.
+      - name: Build the metadata with the notes to reviewer
+        env:
+          AMO_TEST_ACCOUNT_EMAIL: ${{ secrets.AMO_TEST_ACCOUNT_EMAIL }}
+          AMO_TEST_ACCOUNT_PASSWORD: ${{ secrets.AMO_TEST_ACCOUNT_PASSWORD }}
+        run: node scripts/build-amo-metadata.mjs "$RUNNER_TEMP/amo-metadata.json"
+
       - name: Submit to AMO
         uses: kewisch/action-web-ext@v2
         with:
@@ -99,10 +106,10 @@ jobs:
           channel: listed
           source: web-ext-artifacts/release/fediverse_actions_anyware-${{ steps.version.outputs.version }}.zip
           sourceCode: web-ext-artifacts/release/fediverse_actions_anyware-${{ steps.version.outputs.version }}-source.zip
-          # Holds only the description. Name and summary are left out because AMO hides the listing
-          # from search engines when either of them changes.
-          metaDataFile: amo/metadata.json
-          approvalNotes: ${{ secrets.AMO_APPROVAL_NOTES }}
+          # The listing description and the notes to reviewer. Name and summary are left out of
+          # amo/metadata.json because AMO hides the listing from search engines when either of them
+          # changes.
+          metaDataFile: ${{ runner.temp }}/amo-metadata.json
           apiKey: ${{ secrets.AMO_API_KEY }}
           apiSecret: ${{ secrets.AMO_API_SECRET }}
           # A listed version waits for human review, which takes far longer than a job should run.
