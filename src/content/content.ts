@@ -11,20 +11,20 @@ import {
   supportsActionButtonReplacement,
   type AuthState,
   type HomeAccount,
+  type PageAdapter,
 } from "../core";
-import { MastodonPageAdapter } from "../page-adapters";
+import { MastodonPageAdapter, MastodonV3PublicLayoutPageAdapter } from "../page-adapters";
 
 /**
  * Content script orchestration.
  *
- * Wires up the design flow of "skip pages whose own client is signed in -> get
- * active account -> check auth -> extract posts via page adapter -> render via
- * button render mode", and reports on the toolbar icon whether the page's buttons
- * are replaced.
+ * Wires up the design flow of "pick the page adapter -> skip pages whose own
+ * client is signed in -> get active account -> check auth -> extract posts via
+ * page adapter -> render via button render mode", and reports on the toolbar icon
+ * whether the page's buttons are replaced.
  *
- * The adapter is fixed to Mastodon and the render mode to "replace-underline" for
- * now. In the future, the adapter will be selected by page URL and the render mode
- * by settings.
+ * The render mode is fixed to "replace-underline" for now. In the future, it will
+ * be selected by settings.
  */
 
 /**
@@ -38,7 +38,19 @@ import { MastodonPageAdapter } from "../page-adapters";
  */
 const RERENDER_DEBOUNCE_MS = 200;
 
-const pageAdapter = new MastodonPageAdapter();
+/**
+ * The adapter for the client this page was served with, or `null` on a page no
+ * adapter supports.
+ *
+ * Picked once, when the script loads at `document_idle`: what tells the clients
+ * apart is markup the server writes into the document (the web client's mount
+ * point, the public layout's root), which is in place by then and stays for the
+ * life of the document.
+ */
+const pageAdapter: PageAdapter | null =
+  [new MastodonPageAdapter(), new MastodonV3PublicLayoutPageAdapter()].find((adapter) =>
+    adapter.isSupportedPage(),
+  ) ?? null;
 
 /**
  * Outlives the buttons, which are rebuilt on every render, so that an action the
@@ -151,8 +163,7 @@ function reportReplacing(replacing: boolean): void {
 }
 
 async function renderActionButtons(): Promise<void> {
-  // Checked before touching storage so unrelated pages cost one querySelector.
-  if (!pageAdapter.isSupportedPage()) {
+  if (pageAdapter === null) {
     return;
   }
 
@@ -223,7 +234,7 @@ void renderActionButtons();
 // Keeps up with the client-side rendering that produces the posts in the first
 // place, and with SPA navigation, infinite scroll, and React re-renders that drop
 // the substituted buttons afterwards.
-if (pageAdapter.isSupportedPage()) {
+if (pageAdapter !== null) {
   observePage();
 }
 

@@ -1,5 +1,11 @@
 import type { ButtonKind, ExtractedPost } from "../core";
 import type { ActionButtonReplacer, PageAdapter } from "../core";
+import {
+  isExtensionButton,
+  restoreHostButtons,
+  substituteHostButton,
+} from "./host-button-substitution";
+import { initialStateHasSignedInViewer } from "./mastodon-initial-state";
 
 const ICON_CLASS_TO_BUTTON_KIND: ReadonlyMap<string, ButtonKind> = new Map([
   ["icon-reply", "reply"],
@@ -8,16 +14,6 @@ const ICON_CLASS_TO_BUTTON_KIND: ReadonlyMap<string, ButtonKind> = new Map([
   ["icon-bookmark", "bookmark"],
   ["icon-ellipsis-h", "more"],
 ]);
-
-/**
- * Attribute marking an element this extension added to an action bar.
- * The value is the action kind the element serves.
- *
- * Written by {@link MastodonPageAdapter.replaceActionButton}, read back by
- * {@link collectButtonsByKind} and {@link MastodonPageAdapter.restoreActionButtons},
- * so both sides of the contract stay inside this module.
- */
-const EXTENSION_BUTTON_ATTRIBUTE = "data-faa-action";
 
 /** Attributes Mastodon uses to disable a button, which a usable copy must not carry. */
 const DISABLING_ATTRIBUTES: readonly string[] = ["disabled", "aria-disabled"];
@@ -36,45 +32,13 @@ const DISABLED_CLASS = "disabled";
  */
 const ACTIVE_CLASS = "active";
 
-/**
- * Id of the element Mastodon's server puts the web client's boot payload in, as
- * JSON. It sits in the document head, written before any script runs.
- */
-const INITIAL_STATE_ELEMENT_ID = "initial-state";
-
-/**
- * Reads the id of the account the page was served to out of the boot payload.
- *
- * `meta.me` is Mastodon's own definition of being signed in: the server writes
- * it only when the request carried a session (`InitialStateSerializer#meta`),
- * and the client derives `signedIn` from nothing else (`identity_context.tsx`).
- *
- * @returns The account id, or `null` when the payload is absent, unreadable, or
- *   carries no account, all of which are answered as "not signed in".
- */
-function viewerAccountId(payload: string): string | null {
-  let state: unknown;
-  try {
-    state = JSON.parse(payload);
-  } catch {
-    return null;
-  }
-  if (typeof state !== "object" || state === null) return null;
-  const meta = (state as { meta?: unknown }).meta;
-  if (typeof meta !== "object" || meta === null) return null;
-  const me = (meta as { me?: unknown }).me;
-  return typeof me === "string" ? me : null;
-}
-
 function collectButtonsByKind(
   actionBar: HTMLElement,
 ): Readonly<Partial<Record<ButtonKind, HTMLElement>>> {
   const result: Partial<Record<ButtonKind, HTMLElement>> = {};
   for (const button of actionBar.querySelectorAll("button")) {
     if (!(button instanceof HTMLElement)) continue;
-    // Buttons this extension added keep the host's markup, so they would otherwise
-    // be picked up here and shadow the real host button.
-    if (button.hasAttribute(EXTENSION_BUTTON_ATTRIBUTE)) continue;
+    if (isExtensionButton(button)) continue;
     const svg = button.querySelector("svg");
     if (!svg) continue;
     for (const cls of svg.classList) {
@@ -109,15 +73,14 @@ function neutralizeHostButton(button: HTMLElement): void {
 }
 
 /**
- * Page adapter for the standard Mastodon web client.
+ * Page adapter for the standard Mastodon web client, which Mastodon 4.x serves to
+ * signed-out visitors as well.
  *
  * Targets individual status pages (e.g. `/@user/123`) which display
  * one detailed status followed by thread replies.
  *
  * Supports action button replacement: Mastodon's buttons carry their icon as
- * inline SVG, so cloning one reproduces the host's appearance exactly. A host
- * element being substituted is only hidden, never removed, because Mastodon's
- * React tree keeps a reference to it and would fail on a later re-render.
+ * inline SVG, so cloning one reproduces the host's appearance exactly.
  */
 export class MastodonPageAdapter implements PageAdapter, ActionButtonReplacer {
   isSupportedPage(): boolean {
@@ -125,12 +88,7 @@ export class MastodonPageAdapter implements PageAdapter, ActionButtonReplacer {
   }
 
   hasSignedInSession(): boolean {
-    // Read afresh on every call rather than kept: the payload is fixed for the
-    // life of the document, but a page that does not carry one would otherwise
-    // have its answer cached before the document is fully in place.
-    const element = document.getElementById(INITIAL_STATE_ELEMENT_ID);
-    if (element === null) return false;
-    return viewerAccountId(element.textContent ?? "") !== null;
+    return initialStateHasSignedInViewer();
   }
 
   extractPosts(): ExtractedPost[] {
@@ -169,22 +127,7 @@ export class MastodonPageAdapter implements PageAdapter, ActionButtonReplacer {
   replaceActionButton(post: ExtractedPost, kind: ButtonKind): HTMLElement | null {
     const original = post.existingButtons[kind];
     if (original === undefined) return null;
-    const parent = original.parentElement;
-    if (parent === null) return null;
-
-    // A deep clone reproduces the icon, sizing and hover styling. Event listeners
-    // are not cloned, so the host's behavior is dropped without any extra work.
-    const substitute = original.cloneNode(true);
-    if (!(substitute instanceof HTMLElement)) return null;
-
-    neutralizeHostButton(substitute);
-    substitute.setAttribute(EXTENSION_BUTTON_ATTRIBUTE, kind);
-
-    // Inserting before the original keeps the host button last in DOM order, which
-    // guards against scans that resolve duplicates by taking the last match.
-    parent.insertBefore(substitute, original);
-    original.style.display = "none";
-    return substitute;
+    return substituteHostButton(original, kind, neutralizeHostButton);
   }
 
   setActionButtonActive(button: HTMLElement, active: boolean): void {
@@ -192,13 +135,6 @@ export class MastodonPageAdapter implements PageAdapter, ActionButtonReplacer {
   }
 
   restoreActionButtons(post: ExtractedPost): void {
-    for (const substitute of post.insertionTarget.querySelectorAll(
-      `[${EXTENSION_BUTTON_ATTRIBUTE}]`,
-    )) {
-      substitute.remove();
-    }
-    for (const original of Object.values(post.existingButtons)) {
-      original.style.display = "";
-    }
+    restoreHostButtons(post);
   }
 }
