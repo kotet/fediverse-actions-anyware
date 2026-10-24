@@ -30,12 +30,7 @@ How to test
 Why content_scripts.matches is <all_urls>
 Mastodon is run on thousands of independently operated instances, and the
 extension is meant to work on any of them, so the set of sites cannot be listed
-in advance. The content script inspects the page and does nothing unless it
-finds a Mastodon post. The same match pattern is also what grants the host
-permission the background script uses to call the API of the home instance the
-user registered; requests to that instance are made from the background script
-because the host page's Content Security Policy blocks them from the content
-script.
+in advance.
 
 Data handling
 The extension sends data only to the Mastodon instance the user registers as
@@ -53,9 +48,7 @@ This is declared in data_collection_permissions as the required types
   URL of that post is sent to the home instance (GET /api/v2/search with
   resolve=true) so the post can be looked up there, followed by the action
   itself. The lookup starts on mousedown to save time, so the URL is sent as
-  soon as the button is pressed, even if the click is not completed. Nothing is
-  sent for posts the user does not press a button on, and the content of posts
-  is never sent.
+  soon as the button is pressed, even if the click is not completed.
 
 Source code
 The submitted package is built from the attached source archive with the

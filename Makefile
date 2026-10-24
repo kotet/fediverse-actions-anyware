@@ -17,6 +17,7 @@ source-archive:
 # The release build is made here with --allow-untagged, so that it can be checked
 # on commits without a release tag; it is not the one to submit.
 lint: build
+	@wc -m < amo/approval-notes.txt | xargs test 3000 -ge || { echo "Error: approval notes exceeds 3000 characters" >&2; exit 1; }
 	node build.mjs --release --allow-untagged
 	node scripts/check-i18n.mjs
 	web-ext lint --source-dir dist
