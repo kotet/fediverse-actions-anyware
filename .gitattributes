@@ -1,0 +1,3 @@
+# git archive replaces the placeholder in VERSION with the tag of the archived commit, so that the
+# source archive submitted to AMO builds with its version. See scripts/extension-version.mjs.
+VERSION export-subst

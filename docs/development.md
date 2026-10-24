@@ -10,10 +10,18 @@
 |--------|------|------|
 | `make build` | 開発用ビルド。TypeScript のコンパイルと `dist/` への出力 | esbuild + 静的ファイルコピー。モック実装を含む |
 | `make build-release` | 公開用ビルド。`dist-release/` へ出力し、AMO に提出する zip を `web-ext-artifacts/release/` に作る | モック実装を含まない（ポップアップに `Mock` の選択肢が出ない） |
-| `make source-archive` | AMO に提出するソースコードの zip を `web-ext-artifacts/release/` に作る | `git archive` で HEAD のコミット済みファイルだけを固める。追跡中のファイルに未コミットの変更があると失敗する |
-| `make lint` | マニフェストやコードの静的検証 | `make build` と `make build-release` を内包し、両方を lint する。エラー 0 を目指す |
+| `make source-archive` | AMO に提出するソースコードの zip を `web-ext-artifacts/release/` に作る | `git archive` で HEAD のコミット済みファイルだけを固める。追跡中のファイルに未コミットの変更があるか、HEAD に `0.2.0` のようなタグが無いと失敗する |
+| `.github/workflows/release.yml` | `0.2.0` のようなタグの push で、公開用ビルドとソースコードの zip を AMO に提出する | 2回目以降の提出のみ。掲載ページの説明文も `amo/metadata.json` で書き換える。必要なリポジトリシークレットはファイル冒頭のコメントを参照 |
+| `make lint` | マニフェストやコードの静的検証 | `make build` と公開用ビルドを内包し、両方を lint する。公開用ビルドはタグが無くても `--allow-untagged` でバージョン `0.0.0` として作るので、提出には使えない。エラー 0 を目指す |
 | `make typecheck` | TypeScript の型チェックのみ | ビルドせず型エラーだけ確認 |
 | firefox-devtools MCP | Firefox の操作・拡張機能のインストール | Claude Code から直接操作できる |
+
+## バージョン
+
+バージョンは git のタグだけが持つ。`manifest.json` と `package.json` には `version` を書かず、ビルドが `scripts/extension-version.mjs` で決めて出力先の manifest に書き込む。
+
+- git の作業ツリーでは、HEAD に付いた `0.2.0` 形式のタグを使う。タグが無ければ、開発用ビルドは `0.0.0` になり、公開用ビルドは失敗する（`make lint` が使う `--allow-untagged` 付きの場合だけ `0.0.0` になる）。
+- ソースコードの zip では、`VERSION` ファイルを使う。`.gitattributes` の `export-subst` により、`git archive` が中のプレースホルダーをタグ名に置き換えるため、審査者は git の履歴なしに同じバージョンでビルドできる。
 
 ## ディレクトリ構成
 

@@ -1,5 +1,7 @@
 # fediverse-actions-anyware
 
+[日本語](README.ja.md)
+
 A Firefox extension that adds fediverse action buttons (favourite, boost, bookmark, reply) to
 Mastodon pages hosted on instances you are not signed in to, so the action runs on your own home
 instance instead.

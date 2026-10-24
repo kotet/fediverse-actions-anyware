@@ -1,5 +1,6 @@
 import * as esbuild from "esbuild";
-import { cp, mkdir, readdir, rm } from "fs/promises";
+import { cp, mkdir, readFile, readdir, rm, writeFile } from "fs/promises";
+import { resolveExtensionVersion } from "./scripts/extension-version.mjs";
 
 // The release build is the one submitted to AMO. It leaves out the mock
 // implementations, which exist only to check the extension during development,
@@ -7,6 +8,13 @@ import { cp, mkdir, readdir, rm } from "fs/promises";
 // development build installed while working.
 const isRelease = process.argv.includes("--release");
 const outputDirectory = isRelease ? "dist-release" : "dist";
+// Lets `make lint` check the release build of a commit without a release tag,
+// using the placeholder version that development builds get.
+const allowsUntagged = process.argv.includes("--allow-untagged");
+
+// Resolved before anything is written, so that a release build without a
+// release tag fails without leaving a half-built directory.
+const version = await resolveExtensionVersion(isRelease && !allowsUntagged);
 
 // Starts from an empty directory so that a file removed from the sources does
 // not linger in the output and end up in the package submitted to AMO.
@@ -38,8 +46,15 @@ await esbuild.build({
   define: { FAA_INCLUDE_MOCKS: String(!isRelease) },
 });
 
+// manifest.json in the repository has no version; it comes from the git tag.
+const manifest = JSON.parse(await readFile("manifest.json", "utf-8"));
+manifest.version = version;
+
 await Promise.all([
-  cp("manifest.json", `${outputDirectory}/manifest.json`),
+  writeFile(
+    `${outputDirectory}/manifest.json`,
+    `${JSON.stringify(manifest, null, 2)}\n`,
+  ),
   cp("src/content/content.css", `${outputDirectory}/content/content.css`),
   cp("src/popup/popup.html", `${outputDirectory}/popup/popup.html`),
   cp("src/popup/popup.css", `${outputDirectory}/popup/popup.css`),
@@ -56,4 +71,4 @@ await Promise.all([
   ),
 ]);
 
-console.log(`Build complete: ${outputDirectory}/`);
+console.log(`Build complete: ${outputDirectory}/ (version ${version})`);

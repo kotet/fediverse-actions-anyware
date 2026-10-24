@@ -8,10 +8,13 @@
  * - Modified or staged tracked files: error (exit 1), because the release build would read them
  *   but the archive would not contain them.
  * - Untracked files: warning only, listed so that a forgotten `git add` is noticed.
+ * - HEAD without a release tag such as 0.2.0: error, because the VERSION file in the archive would
+ *   not hold a version the release build accepts.
  */
 
 import { execFileSync } from "child_process";
-import { mkdir, readFile } from "fs/promises";
+import { mkdir } from "fs/promises";
+import { resolveExtensionVersion } from "./extension-version.mjs";
 
 const OUTPUT_DIRECTORY = "web-ext-artifacts/release";
 
@@ -35,8 +38,7 @@ if (untrackedFiles !== "") {
   }
 }
 
-const manifest = JSON.parse(await readFile("manifest.json", "utf-8"));
-const version = manifest.version;
+const version = await resolveExtensionVersion(true);
 const commitHash = runGit(["rev-parse", "HEAD"]).trim();
 const archivePath = `${OUTPUT_DIRECTORY}/fediverse_actions_anyware-${version}-source.zip`;
 
