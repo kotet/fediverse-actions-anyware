@@ -18,7 +18,7 @@ function wait(ms: number): Promise<void> {
  * observer, so it is imported once and the page is then driven through its real
  * lifecycle. The assertions below therefore run in order against shared state.
  */
-describe("コンテンツスクリプトの自動再描画", () => {
+describe("content script automatic re-rendering", () => {
   beforeAll(async () => {
     vi.stubGlobal("browser", {
       storage: {
@@ -40,11 +40,11 @@ describe("コンテンツスクリプトの自動再描画", () => {
     await wait(RENDER_SETTLE_MS);
   });
 
-  it("投稿が描画される前は何も挿入しない", () => {
+  it("inserts nothing before the posts are rendered", () => {
     expect(placedKinds()).toEqual([]);
   });
 
-  it("後から投稿が描画されるとボタンを挿入する", async () => {
+  it("inserts buttons once the posts are rendered later", async () => {
     document.body.innerHTML = APP_SHELL + renderedStatusPage;
     await wait(RENDER_SETTLE_MS);
     expect(new Set(placedKinds())).toEqual(
@@ -52,13 +52,13 @@ describe("コンテンツスクリプトの自動再描画", () => {
     );
   });
 
-  it("自身の挿入で再描画が繰り返されない", async () => {
+  it("does not re-render over and over because of its own insertions", async () => {
     const before = placedKinds().length;
     await wait(RENDER_SETTLE_MS);
     expect(placedKinds()).toHaveLength(before);
   });
 
-  it("ホスト側がボタンを描画し直しても挿入し直す", async () => {
+  it("inserts buttons again when the host renders its buttons again", async () => {
     document.body.innerHTML = APP_SHELL;
     await wait(RENDER_SETTLE_MS);
     expect(placedKinds()).toEqual([]);

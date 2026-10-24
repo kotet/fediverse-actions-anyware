@@ -52,7 +52,7 @@ function wait(ms: number): Promise<void> {
  * is left on a page that buttons were already rendered on. The content script has
  * module-level state, so the cases run in order against one page.
  */
-describe("アクティブなアカウントが無くなったときの後片付け", () => {
+describe("cleanup when the active account goes away", () => {
   beforeAll(async () => {
     vi.stubGlobal("browser", {
       storage: {
@@ -79,7 +79,7 @@ describe("アクティブなアカウントが無くなったときの後片付�
     await wait(RENDER_SETTLE_MS);
   });
 
-  it("アカウントが無くなるとボタンを取り除き、元のボタンを戻す", async () => {
+  it("removes its buttons and brings back the host's once the account is gone", async () => {
     expect(placedKinds().length).toBeGreaterThan(0);
 
     readStore = async () => EMPTY_STORE;
@@ -90,11 +90,11 @@ describe("アクティブなアカウントが無くなったときの後片付�
     expect(hiddenHostButtonCount()).toBe(0);
   });
 
-  it("ツールバーアイコンには置き換えの開始と終了を一度ずつ伝える", () => {
+  it("tells the toolbar icon once that replacing started and once that it ended", () => {
     expect(reportedReplacingStates()).toEqual([true, false]);
   });
 
-  it("削除前に始まった描画が後から終わってもボタンを戻さない", async () => {
+  it("does not put buttons back when a render started before the removal finishes after it", async () => {
     readStore = async () => STORE_WITH_ACCOUNT;
     notifyStoreChanged();
     await wait(RENDER_SETTLE_MS);

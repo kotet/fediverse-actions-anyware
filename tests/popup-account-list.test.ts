@@ -74,13 +74,13 @@ function clickAuthButton(item: HTMLElement, label: string): void {
   const button = Array.from(
     item.querySelectorAll<HTMLButtonElement>(".account-auth-button"),
   ).find((candidate) => candidate.textContent === label);
-  if (button === undefined) throw new Error(`${label} のボタンが無い`);
+  if (button === undefined) throw new Error(`no ${label} button`);
   button.click();
 }
 
 function notice(): HTMLElement {
   const element = document.getElementById("account-list-notice");
-  if (element === null) throw new Error("通知欄が無い");
+  if (element === null) throw new Error("no notice element");
   return element;
 }
 
@@ -98,7 +98,7 @@ function storeAccounts(accounts: readonly unknown[]): void {
   };
 }
 
-describe("ポップアップのアカウント一覧", () => {
+describe("popup account list", () => {
   beforeEach(() => {
     storage = {};
     storageListeners = [];
@@ -149,9 +149,9 @@ describe("ポップアップのアカウント一覧", () => {
   });
 
   it.each([
-    ["トークンがあれば", "token", "authStateAuthenticated"],
-    ["トークンが無ければ", undefined, "authStateUnauthenticated"],
-  ])("認証状態は %s %s と表示する", async (_name, accessToken, expected) => {
+    ["with a token", "token", "authStateAuthenticated"],
+    ["without a token", undefined, "authStateUnauthenticated"],
+  ])("shows the auth state of an account %s", async (_name, accessToken, expected) => {
     storeAccounts([MASTODON_ACCOUNT]);
     storage[CREDENTIALS_KEY] = { ...CREDENTIALS, accessToken };
 
@@ -159,7 +159,7 @@ describe("ポップアップのアカウント一覧", () => {
     expect(textOf(accountItems()[0]!, ".account-meta")).toContain(expected);
   });
 
-  it("バックグラウンドへ届かないアカウントはエラーとして表示する", async () => {
+  it("shows an error for an account when the background script cannot be reached", async () => {
     storeAccounts([MASTODON_ACCOUNT]);
     backgroundReachable = false;
 
@@ -167,7 +167,7 @@ describe("ポップアップのアカウント一覧", () => {
     expect(textOf(accountItems()[0]!, ".account-meta")).toContain("authStateError");
   });
 
-  it("認証済みなら再認証とログアウトの導線を出す", async () => {
+  it("offers re-authentication and logout when authenticated", async () => {
     storeAccounts([MASTODON_ACCOUNT]);
     storage[CREDENTIALS_KEY] = CREDENTIALS;
 
@@ -178,21 +178,21 @@ describe("ポップアップのアカウント一覧", () => {
     ]);
   });
 
-  it("未認証ならログインの導線を出す", async () => {
+  it("offers login when unauthenticated", async () => {
     storeAccounts([MASTODON_ACCOUNT]);
 
     await refreshAccountList();
     expect(buttonLabels(accountItems()[0]!)).toEqual(["accountLoginButton"]);
   });
 
-  it("認証する相手のないモックアカウントには導線を出さない", async () => {
+  it("offers nothing for a mock account, which has nowhere to authenticate", async () => {
     storeAccounts([MOCK_ACCOUNT]);
 
     await refreshAccountList();
     expect(buttonLabels(accountItems()[0]!)).toEqual([]);
   });
 
-  it("アクティブなアカウントが未認証ならボタンが出ない理由を示す", async () => {
+  it("explains why no buttons appear when the active account is unauthenticated", async () => {
     storeAccounts([MASTODON_ACCOUNT]);
 
     await refreshAccountList();
@@ -200,7 +200,7 @@ describe("ポップアップのアカウント一覧", () => {
     expect(notice().classList).not.toContain("hidden");
   });
 
-  it("ページで動作する権限が無ければ、認証状態より先にそれを伝える", async () => {
+  it("reports a missing permission to run on pages ahead of the auth state", async () => {
     storeAccounts([MASTODON_ACCOUNT]);
     grantedOrigins = [];
 
@@ -209,7 +209,7 @@ describe("ポップアップのアカウント一覧", () => {
     expect(notice().classList).toContain("error");
   });
 
-  it("アクティブなアカウントが認証済みなら理由を示さない", async () => {
+  it("shows no reason when the active account is authenticated", async () => {
     storeAccounts([MASTODON_ACCOUNT]);
     storage[CREDENTIALS_KEY] = CREDENTIALS;
 
@@ -217,7 +217,7 @@ describe("ポップアップのアカウント一覧", () => {
     expect(notice().classList).toContain("hidden");
   });
 
-  it("ログアウトはアクセストークンだけを消す", async () => {
+  it("logging out deletes the access token alone", async () => {
     storeAccounts([MASTODON_ACCOUNT]);
     storage[CREDENTIALS_KEY] = CREDENTIALS;
     await refreshAccountList();
@@ -236,7 +236,7 @@ describe("ポップアップのアカウント一覧", () => {
     });
   });
 
-  it("アクティブなアカウントを切り替えると一覧に反映する", async () => {
+  it("reflects a switch of the active account in the list", async () => {
     storeAccounts([MASTODON_ACCOUNT, MOCK_ACCOUNT]);
     await setupAccountListView();
 
@@ -249,7 +249,7 @@ describe("ポップアップのアカウント一覧", () => {
     });
   });
 
-  it("後から始まった描画の結果を、先に始まった描画で上書きしない", async () => {
+  it("does not let a render started earlier overwrite one started later", async () => {
     storeAccounts([MASTODON_ACCOUNT]);
     let releaseBackground = (): void => {};
     backgroundGate = new Promise((resolve) => {
@@ -265,7 +265,7 @@ describe("ポップアップのアカウント一覧", () => {
     expect(accountItems()).toHaveLength(0);
   });
 
-  it("アカウントを削除すると資格情報も残さない", async () => {
+  it("leaves no credentials behind when an account is removed", async () => {
     storeAccounts([MASTODON_ACCOUNT]);
     storage[CREDENTIALS_KEY] = CREDENTIALS;
     await setupAccountListView();
@@ -278,7 +278,7 @@ describe("ポップアップのアカウント一覧", () => {
     });
   });
 
-  it("アカウントを作れない設定でも削除できる", async () => {
+  it("can remove an account whose configuration cannot be built", async () => {
     // A mock account under the release build fails the same way, but the build
     // flag is fixed at compile time, so a Mastodon account missing its instance
     // stands in for it.

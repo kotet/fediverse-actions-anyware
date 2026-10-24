@@ -19,7 +19,7 @@ describe("handleToolbarIconRequest", () => {
   it.each([
     [true, "/icons/icon-replacing.svg"],
     [false, "/icons/icon.svg"],
-  ])("replacing=%s なら送信元タブだけ %s にする", async (replacing, path) => {
+  ])("replacing=%s sets the sender's tab alone to %s", async (replacing, path) => {
     await handleToolbarIconRequest(
       { type: "toolbar-icon:set-replacing", replacing },
       { tab: { id: 7 } as browser.tabs.Tab },
@@ -27,7 +27,7 @@ describe("handleToolbarIconRequest", () => {
     expect(setIconCalls).toEqual([{ tabId: 7, path }]);
   });
 
-  it("タブを持たない送信元は無視する", async () => {
+  it("ignores a sender without a tab", async () => {
     await handleToolbarIconRequest(
       { type: "toolbar-icon:set-replacing", replacing: true },
       {},

@@ -39,7 +39,7 @@ function setHostSession(signedIn: boolean): void {
  * buttons on any page, so a page left untouched can only be the work of the
  * signed-in check.
  */
-describe("ホスト側がログイン中のページの除外", () => {
+describe("skipping pages whose host is signed in", () => {
   beforeAll(async () => {
     vi.stubGlobal("browser", {
       storage: {
@@ -66,7 +66,7 @@ describe("ホスト側がログイン中のページの除外", () => {
     await wait(RENDER_SETTLE_MS);
   });
 
-  it("ホスト側がログイン中のページにはボタンを挿入しない", async () => {
+  it("inserts no buttons on a page whose host is signed in", async () => {
     document.body.innerHTML = APP_SHELL + renderedStatusPage;
     await wait(RENDER_SETTLE_MS);
     expect(placedKinds()).toEqual([]);
@@ -74,7 +74,7 @@ describe("ホスト側がログイン中のページの除外", () => {
     expect(sentMessages).toEqual([]);
   });
 
-  it("ホスト側が未ログインならボタンを挿入する", async () => {
+  it("inserts buttons when the host is signed out", async () => {
     setHostSession(false);
 
     document.body.innerHTML = APP_SHELL;

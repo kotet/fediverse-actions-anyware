@@ -63,7 +63,7 @@ function buttonFor(
   kind: PostActionKind,
 ): ActionButtonSpec {
   const button = buttons.find((candidate) => candidate.kind === kind);
-  if (button === undefined) throw new Error(`${kind} のボタンが作られなかった`);
+  if (button === undefined) throw new Error(`no ${kind} button was built`);
   return button;
 }
 
@@ -79,7 +79,7 @@ describe("buildActionButtons", () => {
     stateMemory = new PostActionStateMemory();
   });
 
-  it("4種のアクションを組み立てる", () => {
+  it("builds the four actions", () => {
     const kinds = buildActionButtons(account, post, stateMemory).map(
       (button) => button.kind,
     );
@@ -87,7 +87,7 @@ describe("buildActionButtons", () => {
   });
 
   it.each(["apply", "undo"] as const)(
-    "クリックの向き %s をそのままホームアカウントへ渡す",
+    "passes the click direction %s on to the home account as is",
     async (direction) => {
       const buttons = buildActionButtons(account, post, stateMemory);
       await buttonFor(buttons, "boost").onClick(direction);
@@ -95,12 +95,12 @@ describe("buildActionButtons", () => {
     },
   );
 
-  it("押し下げの通知で投稿の解決を先に始めさせる", () => {
+  it("starts resolving the post ahead when told of a press", () => {
     buildActionButtons(account, post, stateMemory)[0]?.onPressStart();
     expect(account.resolvedPosts).toEqual([POST_URL]);
   });
 
-  it("実行した状態は次に組み立てたボタンへ引き継がれる", async () => {
+  it("carries a state reached by an action over to the buttons built next", async () => {
     await buttonFor(
       buildActionButtons(account, post, stateMemory),
       "favourite",
@@ -112,7 +112,7 @@ describe("buildActionButtons", () => {
     expect(buttonFor(rebuilt, "boost").initiallyActive).toBe(false);
   });
 
-  it("取り消した状態も引き継がれる", async () => {
+  it("carries an undone state over as well", async () => {
     const buttons = buildActionButtons(account, post, stateMemory);
     await buttonFor(buttons, "favourite").onClick("apply");
     await buttonFor(buttons, "favourite").onClick("undo");
@@ -123,7 +123,7 @@ describe("buildActionButtons", () => {
     ).toBe(false);
   });
 
-  it("記憶するのは依頼した向きではなくホームアカウントが報告した状態である", async () => {
+  it("remembers the state the home account reports, not the direction asked for", async () => {
     account.answer = { ok: true, active: true };
     await buttonFor(
       buildActionButtons(account, post, stateMemory),
@@ -136,7 +136,7 @@ describe("buildActionButtons", () => {
     ).toBe(true);
   });
 
-  it("失敗した結果は記憶しない", async () => {
+  it("does not remember a failed result", async () => {
     account.answer = { ok: false, error: { kind: "network", message: "boom" } };
     await buttonFor(
       buildActionButtons(account, post, stateMemory),
@@ -149,7 +149,7 @@ describe("buildActionButtons", () => {
     ).toBe(false);
   });
 
-  it("状態を残さない返信は成功しても記憶しない", async () => {
+  it("does not remember a reply, which leaves no state, even when it succeeds", async () => {
     await buttonFor(buildActionButtons(account, post, stateMemory), "reply").onClick(
       "apply",
     );
@@ -160,7 +160,7 @@ describe("buildActionButtons", () => {
     ).toBe(false);
   });
 
-  it("記憶を捨てるとボタンは非アクティブに戻る", async () => {
+  it("returns the buttons to inactive once the memory is dropped", async () => {
     await buttonFor(
       buildActionButtons(account, post, stateMemory),
       "favourite",
@@ -174,7 +174,7 @@ describe("buildActionButtons", () => {
     ).toBe(false);
   });
 
-  it("記憶は投稿ごとに分かれている", async () => {
+  it("keeps a separate memory for each post", async () => {
     await buttonFor(
       buildActionButtons(account, post, stateMemory),
       "favourite",

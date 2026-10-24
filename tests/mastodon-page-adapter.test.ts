@@ -12,12 +12,12 @@ const statusPageFixture = readFileSync(
 
 describe("MastodonPageAdapter", () => {
   describe("isSupportedPage", () => {
-    it("Mastodon ページ (#mastodon 要素あり) を検出する", () => {
+    it("detects a Mastodon page (with a #mastodon element)", () => {
       document.body.innerHTML = statusPageFixture;
       expect(new MastodonPageAdapter().isSupportedPage()).toBe(true);
     });
 
-    it("非 Mastodon ページ (#mastodon 要素なし) は検出しない", () => {
+    it("does not detect a non-Mastodon page (without a #mastodon element)", () => {
       document.body.innerHTML = "<article><p>Not Mastodon</p></article>";
       expect(new MastodonPageAdapter().isSupportedPage()).toBe(false);
     });
@@ -38,12 +38,12 @@ describe("MastodonPageAdapter", () => {
       document.body.append(element);
     }
 
-    it("meta.me を持つページをログイン中と判定する", () => {
+    it("judges a page whose payload has meta.me as signed in", () => {
       setInitialState(JSON.stringify({ meta: { me: "109252080473231374" } }));
       expect(new MastodonPageAdapter().hasSignedInSession()).toBe(true);
     });
 
-    it("未ログインで配信されたページ (fixture) を未ログインと判定する", () => {
+    it("judges a page served to a signed-out visitor (the fixture) as signed out", () => {
       document.body.innerHTML = statusPageFixture;
       // The capture does carry a payload; what it lacks is an account in it.
       expect(document.getElementById("initial-state")).not.toBeNull();
@@ -51,12 +51,12 @@ describe("MastodonPageAdapter", () => {
     });
 
     it.each([
-      ["payload がない", null],
-      ["JSON として壊れている", "{"],
-      ["meta がない", "{}"],
-      ["meta.me がない", JSON.stringify({ meta: { access_token: null } })],
-      ["meta.me が文字列でない", JSON.stringify({ meta: { me: null } })],
-    ])("%s ページは未ログインとして扱う", (_case, payload) => {
+      ["has no payload", null],
+      ["has a payload that is broken JSON", "{"],
+      ["has no meta", "{}"],
+      ["has no meta.me", JSON.stringify({ meta: { access_token: null } })],
+      ["has a meta.me that is not a string", JSON.stringify({ meta: { me: null } })],
+    ])("treats a page that %s as signed out", (_case, payload) => {
       setInitialState(payload);
       expect(new MastodonPageAdapter().hasSignedInSession()).toBe(false);
     });
@@ -67,19 +67,19 @@ describe("MastodonPageAdapter", () => {
       document.body.innerHTML = statusPageFixture;
     });
 
-    it("3件の投稿をすべて抽出する", () => {
+    it("extracts all three posts", () => {
       const posts = new MastodonPageAdapter().extractPosts();
       expect(posts).toHaveLength(3);
     });
 
-    it("メイン投稿のURLを正しく取得する", () => {
+    it("reads the URL of the main post", () => {
       const posts = new MastodonPageAdapter().extractPosts();
       expect(posts[0]?.postUrl).toBe(
         "https://mastodon.archive.org/@internetarchive/116818894033044875",
       );
     });
 
-    it("スレッドリプライのURLをすべて正しく取得する", () => {
+    it("reads the URLs of all the thread replies", () => {
       const posts = new MastodonPageAdapter().extractPosts();
       expect(posts[1]?.postUrl).toBe(
         "https://mastodon.archive.org/@internetarchive/116818894061160135",
@@ -89,7 +89,7 @@ describe("MastodonPageAdapter", () => {
       );
     });
 
-    it("メイン投稿のアクションボタンを5種すべて取得する", () => {
+    it("finds all five action buttons of the main post", () => {
       const buttons = new MastodonPageAdapter().extractPosts()[0]?.existingButtons;
       expect(buttons?.reply).toBeInstanceOf(HTMLButtonElement);
       expect(buttons?.boost).toBeInstanceOf(HTMLButtonElement);
@@ -98,7 +98,7 @@ describe("MastodonPageAdapter", () => {
       expect(buttons?.more).toBeInstanceOf(HTMLButtonElement);
     });
 
-    it("スレッドリプライのアクションボタンを5種すべて取得する", () => {
+    it("finds all five action buttons of each thread reply", () => {
       const posts = new MastodonPageAdapter().extractPosts();
       for (const post of [posts[1], posts[2]]) {
         const buttons = post?.existingButtons;
@@ -110,7 +110,7 @@ describe("MastodonPageAdapter", () => {
       }
     });
 
-    it("各ボタン要素が対応するアイコンクラスを持つ", () => {
+    it("finds each button by the icon class of its kind", () => {
       const buttons = new MastodonPageAdapter().extractPosts()[0]?.existingButtons;
       expect(buttons?.reply?.querySelector("svg")?.classList).toContain("icon-reply");
       expect(buttons?.boost?.querySelector("svg")?.classList).toContain("icon-retweet");
@@ -119,7 +119,7 @@ describe("MastodonPageAdapter", () => {
       expect(buttons?.more?.querySelector("svg")?.classList).toContain("icon-ellipsis-h");
     });
 
-    it("拡張が置き換えたボタンを既存ボタンとして扱わない", () => {
+    it("does not take a button the extension put in for a host button", () => {
       const adapter = new MastodonPageAdapter();
       const post = adapter.extractPosts()[0];
       const original = post?.existingButtons.favourite;
@@ -136,7 +136,7 @@ describe("MastodonPageAdapter", () => {
       document.body.innerHTML = statusPageFixture;
     });
 
-    it("元ボタンのアイコンを引き継いだ別の要素を返す", () => {
+    it("returns a separate element carrying the original button's icon", () => {
       const adapter = new MastodonPageAdapter();
       const post = adapter.extractPosts()[0];
       if (post === undefined) throw new Error("fixture broken");
@@ -145,7 +145,7 @@ describe("MastodonPageAdapter", () => {
       expect(substitute?.querySelector("svg")?.classList).toContain("icon-star");
     });
 
-    it("元ボタンを削除せず非表示にする", () => {
+    it("hides the original button instead of removing it", () => {
       const adapter = new MastodonPageAdapter();
       const post = adapter.extractPosts()[0];
       const original = post?.existingButtons.favourite;
@@ -155,7 +155,7 @@ describe("MastodonPageAdapter", () => {
       expect(original.style.display).toBe("none");
     });
 
-    it("無効化されたブックマークボタンを操作可能にする", () => {
+    it("makes a disabled bookmark button usable", () => {
       const adapter = new MastodonPageAdapter();
       const post = adapter.extractPosts()[0];
       if (post === undefined) throw new Error("fixture broken");
@@ -168,7 +168,7 @@ describe("MastodonPageAdapter", () => {
       expect((substitute as HTMLButtonElement | null)?.disabled).toBe(false);
     });
 
-    it("元ボタンがない種別では null を返す", () => {
+    it("returns null for a kind the post has no button for", () => {
       const adapter = new MastodonPageAdapter();
       const post = adapter.extractPosts()[0];
       if (post === undefined) throw new Error("fixture broken");
@@ -176,7 +176,7 @@ describe("MastodonPageAdapter", () => {
       expect(adapter.replaceActionButton(withoutButtons, "favourite")).toBeNull();
     });
 
-    it("ホスト側で実行済みの見た目を引き継がない", () => {
+    it("does not carry over the host's look for an action already taken", () => {
       const adapter = new MastodonPageAdapter();
       const post = adapter.extractPosts()[0];
       const original = post?.existingButtons.favourite;
@@ -196,7 +196,7 @@ describe("MastodonPageAdapter", () => {
       document.body.innerHTML = statusPageFixture;
     });
 
-    it("実行中の状態をホスト自身のクラスで表す", () => {
+    it("shows an action in effect with the host's own class", () => {
       const adapter = new MastodonPageAdapter();
       const post = adapter.extractPosts()[0];
       if (post === undefined) throw new Error("fixture broken");
@@ -219,7 +219,7 @@ describe("MastodonPageAdapter", () => {
       document.body.innerHTML = statusPageFixture;
     });
 
-    it("置き換えた要素を取り除き元ボタンを再表示する", () => {
+    it("removes the substitutes and shows the original buttons again", () => {
       const adapter = new MastodonPageAdapter();
       const post = adapter.extractPosts()[0];
       const original = post?.existingButtons.favourite;
@@ -231,7 +231,7 @@ describe("MastodonPageAdapter", () => {
       expect(original.style.display).toBe("");
     });
 
-    it("何も置き換えていない状態で呼んでも安全である", () => {
+    it("is safe to call when nothing has been replaced", () => {
       const adapter = new MastodonPageAdapter();
       const post = adapter.extractPosts()[0];
       if (post === undefined) throw new Error("fixture broken");
@@ -240,11 +240,11 @@ describe("MastodonPageAdapter", () => {
   });
 
   describe("supportsActionButtonReplacement", () => {
-    it("MastodonPageAdapter は置き換えに対応している", () => {
+    it("MastodonPageAdapter supports replacement", () => {
       expect(supportsActionButtonReplacement(new MastodonPageAdapter())).toBe(true);
     });
 
-    it("MockPageAdapter は置き換えに対応していない", () => {
+    it("MockPageAdapter does not support replacement", () => {
       expect(supportsActionButtonReplacement(new MockPageAdapter())).toBe(false);
     });
   });
